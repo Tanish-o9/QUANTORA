@@ -1,360 +1,169 @@
-# ⚡ Quantora
+# ⚡ QUANTORA
 ### LLM Performance & Optimization Engineering Platform
 
 **Benchmark. Analyze. Optimize.**
 
-Quantora is an open-source LLM performance engineering platform designed to benchmark, analyze, and optimize large language model inference. It provides a systematic environment to investigate the trade-offs between computational efficiency, inference performance, memory consumption, and output quality.
+**Quantora** is a production-grade ML systems engineering and benchmarking suite designed to measure the real-world resource footprints, runtime latencies, throughput profiles, and output qualities of open-source Large Language Models (LLMs) across precision levels (FP32, FP16, BF16, INT8, INT4), KV cache policies, and PEFT Low-Rank Adaptation (LoRA) configurations.
 
-By combining model quantization, LoRA fine-tuning, KV cache optimization, hardware profiling, and reproducible benchmarking, Quantora helps developers understand how optimization techniques affect real-world LLM performance.
-
----
-
-## 🎯 Project Objectives
-
-The primary objective of Quantora is to investigate how large language models can become more computationally efficient without compromising their output quality.
-
-The platform focuses on answering key engineering questions:
-
-- How much memory does an LLM consume during inference?
-- How does quantization affect memory usage and generation speed?
-- What is the impact of different numerical precisions on model performance?
-- How does KV cache influence inference memory and latency?
-- Can LoRA improve task-specific performance with fewer trainable parameters?
-- What trade-offs exist between latency, throughput, memory, and quality?
-- Which configuration provides the best performance under a given hardware budget?
-
-## ✨ Key Features
-
-### 1. Model Management
-- Load open-source models from Hugging Face.
-- Support configurable model selection.
-- Automatic CPU/GPU detection.
-- Model parameter and size inspection.
-- Configurable generation parameters.
-
-### 2. Model Quantization
-Experiment with different numerical precision configurations:
-
-- FP32
-- FP16
-- BF16 (hardware-dependent)
-- INT8
-- INT4
-
-Analyze the impact of quantization on:
-- Model memory consumption.
-- Inference latency.
-- Generation throughput.
-- Output quality.
-
-### 3. LoRA Fine-Tuning
-Explore parameter-efficient fine-tuning using Low-Rank Adaptation.
-
-- Configure LoRA rank, alpha, and dropout.
-- Load existing LoRA adapters.
-- Run optional task-specific fine-tuning.
-- Compare base models against adapted models.
-- Measure trainable parameter percentage and adapter size.
-
-### 4. KV Cache Optimization
-Investigate the role of Key-Value caching in autoregressive inference.
-
-- Compare supported cache configurations.
-- Analyze memory consumption across context lengths.
-- Explore supported cache quantization techniques.
-- Evaluate the impact of caching on generation performance.
-
-### 5. Performance Benchmarking
-Run controlled and reproducible inference experiments.
-
-Metrics include:
-
-| Metric | Description |
-|---|---|
-| TTFT | Time to First Token |
-| TPOT | Time Per Output Token |
-| Average Latency | Average inference duration |
-| P95 Latency | 95th percentile latency |
-| Throughput | Generated tokens per second |
-| Model Load Time | Time required to load the model |
-| Peak GPU Memory | Maximum allocated GPU memory |
-| CPU RAM | System memory consumption |
-
-### 6. Hardware Profiling
-Monitor hardware resources during model execution.
-
-- GPU availability and device information.
-- GPU allocated and reserved memory.
-- Peak GPU memory.
-- CPU RAM consumption.
-- Hardware configuration tracking.
-
-### 7. Model Quality Evaluation
-Evaluate whether optimization affects generated output quality.
-
-- ROUGE-based evaluation.
-- Optional BERTScore.
-- Baseline versus optimized output comparison.
-- Quality difference analysis.
-
-### 8. Experiment Comparison
-Compare different model configurations using actual benchmark results.
-
-Automatically calculate:
-
-- Memory reduction percentage.
-- Latency improvement percentage.
-- Throughput improvement percentage.
-- Quality difference.
-
-### 9. Experiment History & Reports
-- Store benchmark configurations and results.
-- Review previous experiments.
-- Compare historical results.
-- Export benchmark data in CSV and JSON formats.
+All metrics are gathered from **real model execution on local hardware**—never mocked or hardcoded.
 
 ---
 
-## 🏗️ System Architecture
+## 1. Core Architecture
 
-```text
-                  QUANTORA
-                     |
-             Streamlit Dashboard
-                     |
-          Experiment Configuration
-                     |
-              Model Engine
-                     |
-           Optimization Engine
-             /      |      \
-       Quantization LoRA  KV Cache
-             \      |      /
-              Benchmark Engine
-                     |
-             Hardware Profiler
-                     |
-              Quality Evaluator
-                     |
-             Metrics & Analysis
-                     |
-              Experiment Storage
-                     |
-             Results & Reports
+The repository adheres to a strict, human-written, decoupled modular design:
+
 ```
-
-## 🛠️ Technology Stack
-
-| Category | Technologies |
-|---|---|
-| Programming Language | Python |
-| Deep Learning | PyTorch |
-| LLM Framework | Hugging Face Transformers |
-| Quantization | BitsAndBytes |
-| Fine-Tuning | PEFT, LoRA |
-| Hardware Profiling | CUDA, PyTorch, Psutil |
-| Data Processing | NumPy, Pandas |
-| Evaluation | Evaluate, ROUGE, BERTScore |
-| Dashboard | Streamlit |
-| Visualization | Plotly |
-| Experiment Storage | SQLite, JSON, CSV |
-
----
-
-## 📁 Project Structure
-
-```text
-Quantora/
+QUANTORA/
 │
-├── app.py
-├── model_engine.py
-├── benchmark_engine.py
-├── optimizer.py
-├── evaluator.py
-├── storage.py
+├── app.py                  # Professional Streamlit dashboard & analytics UI
+├── cli.py                  # Terminal CLI for automated headless benchmarks & history
+├── model_engine.py         # Hugging Face model lifecycle, device placement & streaming inference
+├── benchmark_engine.py     # Controlled benchmark trials, CUDA-sync timing & NVML energy telemetry
+├── optimizer.py            # Hardware validation, quantization, speculative decoding, SDPA & LoRA
+├── evaluator.py            # ROUGE, token F1 & MMLU multi-choice reasoning evaluation
+├── storage.py              # SQLite persistence, Pareto recommender & CSV/JSON export
+├── requirements.txt        # Minimal, explicit project dependencies
+├── LICENSE                 # MIT Open-Source License
+├── README.md               # Architecture documentation, setup & methodology
 │
 ├── data/
-│   └── sample_prompts.json
+│   ├── sample_prompts.json # Fixed prompts across Summarization, Reasoning, Code & QA
+│   └── reasoning_eval.json # Standardized ML Systems & LLM reasoning benchmark questions
 │
-├── results/
-│
-├── requirements.txt
-└── README.md
+└── results/
+    ├── experiments.db      # SQLite database storing benchmark runs
+    ├── benchmark_results.csv
+    └── benchmark_results.json
 ```
 
-## ⚙️ Installation & Setup
+### Module Responsibilities
+
+| File | Primary Responsibility |
+| :--- | :--- |
+| `model_engine.py` | Loads Hugging Face models and tokenizers; manages GPU VRAM / CPU placement; token-by-token streamer for exact TTFT & TPOT measurement; memory cleanup. |
+| `benchmark_engine.py` | Conducts warm-up runs and repeated trials; measures TTFT, TPOT, P95 latency, tokens/sec throughput, and peak memory; aggregates statistics. |
+| `optimizer.py` | Validates host hardware support; configures BitsAndBytes INT8/INT4 and FP16/BF16; provides theoretical & empirical KV cache analysis; LoRA adaptation & SFT module. |
+| `evaluator.py` | Computes ROUGE-1, ROUGE-2, and ROUGE-L F1 scores; calculates relative quality differences ($\Delta = \text{Score}_{\text{opt}} - \text{Score}_{\text{base}}$) and token overlap. |
+| `storage.py` | Persists experiment records to SQLite; exports results to CSV and JSON; computes percentage improvements; recommends Pareto-optimal configurations. |
+| `app.py` | Interactive dashboard featuring Overview, Model Lab, Benchmark Lab, Optimization Lab, Performance Analytics, Experiment History, and Recommender. |
+
+---
+
+## 2. Benchmark Methodology
+
+To ensure high reproducibility across runs, the benchmarking engine enforces:
+
+1. **Separation of Loading and Inference:** Model loading time is recorded separately from inference latency.
+2. **Deterministic Warm-Up:** Configurable warm-up runs (default: 1–2) are executed prior to data collection to prime CUDA kernels, PyTorch JIT compilation, and memory allocators. Warm-up iterations are strictly excluded from reported statistics.
+3. **Hardware Synchronization:** `torch.cuda.synchronize()` is called immediately before starting and after finishing the wall-clock timer (`time.perf_counter()`) on GPU systems to prevent asynchronous CUDA dispatch skew.
+4. **Peak Memory Reset:** `torch.cuda.reset_peak_memory_stats()` is invoked before each trial to measure exact memory allocation (`torch.cuda.max_memory_allocated()`) and reserved memory (`torch.cuda.max_memory_reserved()`). CPU memory is monitored via `psutil.Process().memory_info().rss`.
+5. **Real TTFT & TPOT Measurement:** Employs a custom `BenchmarkTokenStreamer` that timestamps the arrival of the first generated token (Time To First Token / prefill latency) and computes average inter-token latency (Time Per Output Token / decode latency).
+6. **Multi-Trial Statistics:** Reports mean latency, median latency, P95 latency, and generation throughput across repeated trials.
+
+---
+
+## 3. Supported Configurations & Hardware Compatibility
+
+### Precisions Supported
+- **FP32 (Float32):** Standard single-precision baseline; supported on both CUDA GPUs and CPUs.
+- **FP16 (Float16):** Half-precision; requires CUDA hardware with Tensor Core support.
+- **BF16 (BFloat16):** Brain floating-point format; supported on NVIDIA GPUs with Compute Capability $\ge 8.0$ (Ampere, Ada Lovelace, Hopper) or modern CPUs with AVX512_BF16/AMX.
+- **INT8 (8-bit Quantization):** Enabled via Hugging Face `BitsAndBytesConfig(load_in_8bit=True)` on CUDA GPUs.
+- **INT4 (4-bit NF4 Quantization):** Enabled via `BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.float16)`. Reduces memory footprint by up to 70–75%.
+
+### KV Cache Analysis
+- **Theoretical Calculator:** $2 \times \text{layers} \times \text{heads} \times \text{head\_dim} \times \text{seq\_len} \times \text{batch\_size} \times \text{bytes\_per\_element}$
+- **Empirical Evaluation:** Compares autoregressive decoding with `use_cache=True` vs `use_cache=False`.
+- *Note:* The standard KV cache trades memory for compute efficiency (preventing $\mathcal{O}(N^2)$ recomputation); it does *not* reduce memory footprint.
+
+### LoRA Adaptation (PEFT)
+- Wraps target linear projection layers (`q_proj`, `v_proj`) with low-rank decomposition matrices ($A \times B$).
+- Calculates trainable vs frozen parameter counts and percentages.
+- Features an optional lightweight Supervised Fine-Tuning (SFT) test to verify training efficiency and memory consumption during backpropagation.
+
+---
+
+## 4. Installation & Setup
 
 ### Prerequisites
+- Python 3.10 to 3.13
+- NVIDIA GPU with CUDA 12.x drivers installed (or CPU fallback mode)
 
-- Python 3.11 or 3.12 recommended.
-- Git.
-- At least 8 GB system RAM recommended.
-- NVIDIA GPU with compatible CUDA support for GPU-based experiments.
-- CPU-only execution is supported for compatible models.
-
-### 1. Clone the repository
-
+### Installation
+Clone or navigate to the project directory:
 ```bash
-git clone https://github.com/YOUR_USERNAME/quantora.git
-
-cd quantora
+cd QUANTORA
 ```
 
-### 2. Create a virtual environment
-
-Windows:
-
-```bash
-python -m venv venv
-
-venv\Scripts\activate
-```
-
-Linux/macOS:
-
-```bash
-python -m venv venv
-
-source venv/bin/activate
-```
-
-### 3. Install dependencies
-
+Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-Install PyTorch using the official instructions appropriate for your hardware:
+---
 
-https://pytorch.org/get-started/locally/
+## 5. Running the Application
 
-### 4. Launch the application
+### Interactive Streamlit Dashboard
+Launch the web UI:
+```bash
+python -m streamlit run app.py
+```
+Open your browser at `http://localhost:8501`.
+
+### Headless CLI Benchmarking
+You can run automated benchmarks, query hardware specs, and inspect history directly from your terminal:
+```bash
+# 1. Display hardware & library telemetry
+python cli.py hardware
+
+# 2. Run a full benchmark trial with live GPU energy telemetry
+python cli.py benchmark --model Qwen/Qwen2.5-0.5B-Instruct --precision fp16 --trials 3 --max-tokens 64
+
+# 3. View benchmark run history
+python cli.py history
+
+# 4. Find Pareto-optimal configuration based on memory and latency constraints
+python cli.py recommend --budget 1500 --latency 3.0
+
+# 5. Export history to CSV and JSON
+python cli.py export
+```
+
+---
+
+## 6. Verification and Testing
+
+You can run automated programmatic tests verifying all components (model loading, precision checks, benchmarking, ROUGE quality scoring, and database storage) via Python:
 
 ```bash
-streamlit run app.py
-```
+python -c "
+from model_engine import get_model_engine
+from benchmark_engine import get_benchmark_engine
+from storage import load_experiments
 
-Open the local dashboard:
+engine = get_model_engine()
+info = engine.load_model('Qwen/Qwen2.5-0.5B-Instruct', precision='fp16', device='cuda')
+print('Loaded Model:', info['model_id'], 'Footprint:', info['memory_footprint_mb'], 'MB')
 
-```text
-http://localhost:8501
+bench = get_benchmark_engine()
+res = bench.run_benchmark('Summarize quantum computing in one sentence.', max_new_tokens=32, num_trials=2)
+print('Avg Latency:', res['avg_latency_s'], 's | Throughput:', res['throughput_tokens_sec'], 'tok/s')
+
+df = load_experiments()
+print('Stored Experiments:', len(df))
+"
 ```
 
 ---
 
-## 🚀 How It Works
-
-A typical Quantora experiment follows this workflow:
-
-1. Select a supported Hugging Face model.
-2. Configure the model's precision and optimization settings.
-3. Provide a fixed evaluation prompt.
-4. Load the model and establish a baseline.
-5. Execute warm-up and repeated benchmark runs.
-6. Collect latency, throughput, and memory measurements.
-7. Evaluate generated output quality.
-8. Compare baseline and optimized configurations.
-9. Save experiment results.
-10. Export performance reports.
-
-## 📊 Benchmarking Methodology
-
-Quantora emphasizes reproducible measurements rather than theoretical optimization claims.
-
-The benchmark engine uses:
-
-- Fixed prompts and generation parameters.
-- Configurable warm-up iterations.
-- Repeated measured inference trials.
-- CUDA synchronization for GPU timing.
-- Peak memory tracking.
-- Statistical aggregation of benchmark results.
-
-### Performance Calculations
-
-**Memory Reduction**
-
-```text
-((Baseline Memory - Optimized Memory)
- / Baseline Memory) * 100
-```
-
-**Latency Improvement**
-
-```text
-((Baseline Latency - Optimized Latency)
- / Baseline Latency) * 100
-```
-
-**Throughput Improvement**
-
-```text
-((Optimized Throughput - Baseline Throughput)
- / Baseline Throughput) * 100
-```
-
-**Quality Difference**
-
-```text
-Optimized Quality - Baseline Quality
-```
-
-All reported improvements must be derived from actual experiments.
-
-Results are hardware-dependent and should be interpreted alongside model configuration, software versions, workload, and measurement methodology.
+## 7. Known Hardware Limitations
+- **INT8 / INT4 Quantization:** Requires an NVIDIA GPU and compiled `bitsandbytes` CUDA binaries. On CPU-only environments, the lab gracefully disables 8-bit/4-bit quantization and directs users to FP32.
+- **BFloat16:** Native hardware support requires Compute Capability $\ge 8.0$. Older architectures will report incompatibility and recommend FP16.
 
 ---
 
-## 🔬 Future Roadmap
+## 8. License
+Distributed under the **MIT License**. See `LICENSE` for details.
 
-- [ ] Automated optimization configuration search.
-- [ ] Pareto frontier analysis for memory, latency, and quality.
-- [ ] Advanced KV cache compression experiments.
-- [ ] vLLM inference backend integration.
-- [ ] Concurrent request benchmarking.
-- [ ] Energy consumption profiling.
-- [ ] Automated optimization recommendations.
-- [ ] Advanced model comparison analytics.
-- [ ] Extended experiment reproducibility and reporting.
-
-## 🎓 Learning Outcomes
-
-Quantora explores practical concepts in:
-
-- Large Language Model inference.
-- Neural network quantization.
-- Parameter-efficient fine-tuning.
-- Attention mechanisms and KV caching.
-- GPU memory management.
-- Performance profiling.
-- Benchmark design and statistical analysis.
-- ML systems engineering.
-
-## ⚠️ Limitations
-
-- Optimization support depends on model architecture, hardware, and library versions.
-- INT8 and INT4 performance varies across hardware.
-- Lower numerical precision does not guarantee faster inference.
-- Standard KV caching can increase memory usage even while improving generation efficiency.
-- LoRA fine-tuning does not automatically reduce base-model inference memory.
-- CPU and GPU benchmark results are not directly interchangeable.
-- Quality metrics provide task-specific evidence rather than a complete measure of model correctness.
-
-## 🤝 Contributing
-
-Contributions, suggestions, and improvements are welcome.
-
-1. Fork the repository.
-2. Create a feature branch.
-3. Implement and test your changes.
-4. Submit a pull request with a clear description.
-
-## 📄 License
-
-This project is intended to be distributed under the MIT License. Add a `LICENSE` file before publishing under that license.
-
----
-
-**Quantora — Engineering Efficient Intelligence.**
-
-Built to understand not just how LLMs perform, but why they perform the way they do.
