@@ -46,6 +46,11 @@ Thumbs.db
 # Logs
 *.log
 
+# Web Node Modules and Dist
+web/node_modules/
+web/dist/
+web/.vite/
+
 # PyTorch checkpoints / weights if saved locally
 *.pt
 *.pth

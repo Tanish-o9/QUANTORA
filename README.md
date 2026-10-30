@@ -24,6 +24,9 @@ QUANTORA/
 ├── .github/
 │   └── workflows/
 │       └── ci.yml              # Automated GitHub Actions CI/CD pipeline
+├── web/                        # Modern React + Vite + Tailwind CSS Dashboard (Vercel Ready)
+│   ├── src/components/         # BenchmarkMatrix, ParetoRecommender, KVCache, SpeculativeDecoding
+│   └── vercel.json             # 1-Click zero-config Vercel deployment spec
 ├── tests/
 │   ├── test_optimizer.py       # Hardware detection, quantization & KV cache tests
 │   ├── test_evaluator.py       # ROUGE & semantic similarity evaluation tests
@@ -158,7 +161,22 @@ docker-compose up --build
 docker build -t quantora:latest .
 docker run -p 8501:8501 -v $(pwd)/results:/app/results quantora:latest
 ```
-Access the dashboard at `http://localhost:8501`.
+Access the Streamlit lab at `http://localhost:8501`.
+
+### 🌐 Modern Web Dashboard (React + Vite + Tailwind) & Vercel Deployment
+A client-side interactive engineering dashboard is located in `web/` for zero-lag analytics and instantaneous Vercel deployment:
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+#### 🚀 Deploy to Vercel in 1-Click
+Both `vercel.json` and `web/vercel.json` are pre-configured:
+1. Connect your GitHub repository to [Vercel](https://vercel.com/new).
+2. Root directory can be left as default (or set to `web`).
+3. Click **Deploy** to get a global, blazing-fast edge-hosted dashboard.
 
 ---
 
