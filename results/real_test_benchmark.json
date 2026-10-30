@@ -1,0 +1,111 @@
+{
+  "hardware": {
+    "os": "Windows-11-10.0.26300-SP0",
+    "python_version": "3.13.3",
+    "torch_version": "2.6.0+cu124",
+    "cuda_available": true,
+    "cuda_version": "12.4",
+    "device_name": "NVIDIA GeForce RTX 2050",
+    "total_vram_gb": 4.0,
+    "compute_capability": "8.6",
+    "bf16_supported": true,
+    "bitsandbytes_available": true,
+    "peft_available": true,
+    "total_ram_gb": 11.71,
+    "available_ram_gb": 2.48
+  },
+  "results": [
+    {
+      "model_id": "Qwen/Qwen2.5-0.5B-Instruct",
+      "precision": "fp32",
+      "device": "cuda",
+      "load_time_s": 4.485,
+      "memory_footprint_mb": 1884.59,
+      "avg_latency_s": 2.4351,
+      "ttft_s": 0.0023,
+      "tpot_ms": 12.6,
+      "throughput_tokens_sec": 32.86,
+      "peak_gpu_memory_mb": 1903.35,
+      "peak_cpu_memory_mb": 2036.38,
+      "rouge1": 16.98,
+      "rouge2": 1.92,
+      "rougeL": 9.43,
+      "output_sample": " Despite these efforts, there is still a long way to go before AI can fully replace human decision-making in critical applications like autonomous vehicles or medical diagnosis.\n\nThe passage discusses how artificial intelligence (AI) has transformed various sectors, including healthcare diagnostics and financial fraud detection. While it offers substantial benefits through its ability to process vast amounts of data quickly, it also faces significant hurdles due to its complex nature and resource"
+    },
+    {
+      "model_id": "Qwen/Qwen2.5-0.5B-Instruct",
+      "precision": "fp16",
+      "device": "cuda",
+      "load_time_s": 3.731,
+      "memory_footprint_mb": 942.29,
+      "avg_latency_s": 2.4911,
+      "ttft_s": 0.0017,
+      "tpot_ms": 12.9,
+      "throughput_tokens_sec": 32.12,
+      "peak_gpu_memory_mb": 956.21,
+      "peak_cpu_memory_mb": 1987.15,
+      "rouge1": 16.98,
+      "rouge2": 1.92,
+      "rougeL": 9.43,
+      "output_sample": " Despite these efforts, there is still a long way to go before AI can fully replace human decision-making in critical applications like autonomous vehicles or medical diagnosis.\n\nThe passage discusses how artificial intelligence (AI) has transformed various sectors, including healthcare diagnostics and financial fraud detection. While it offers substantial benefits through its ability to process vast amounts of data quickly, it also faces significant hurdles due to its complex nature and resource"
+    },
+    {
+      "model_id": "Qwen/Qwen2.5-0.5B-Instruct",
+      "precision": "int8",
+      "device": "cuda",
+      "load_time_s": 4.846,
+      "memory_footprint_mb": 601.04,
+      "avg_latency_s": 14.7154,
+      "ttft_s": 0.0017,
+      "tpot_ms": 76.2,
+      "throughput_tokens_sec": 5.55,
+      "peak_gpu_memory_mb": 618.8,
+      "peak_cpu_memory_mb": 1993.95,
+      "rouge1": 26.67,
+      "rouge2": 7.77,
+      "rougeL": 15.24,
+      "output_sample": " Despite these efforts, there is still a long way to go before AI can fully replace human decision-making processes.\n\nThe passage discusses how artificial intelligence (AI) has transformed various industries through advancements in machine learning models, including deep neural networks and large language models. While these models excel at detecting anomalies and improving diagnostic accuracy, they face significant computational and resource constraints due to their size and complexity. To address this"
+    },
+    {
+      "model_id": "Qwen/Qwen2.5-0.5B-Instruct",
+      "precision": "int4",
+      "device": "cuda",
+      "load_time_s": 6.427,
+      "memory_footprint_mb": 430.42,
+      "avg_latency_s": 3.529,
+      "ttft_s": 0.0017,
+      "tpot_ms": 18.3,
+      "throughput_tokens_sec": 22.67,
+      "peak_gpu_memory_mb": 457.72,
+      "peak_cpu_memory_mb": 1981.46,
+      "rouge1": 23.53,
+      "rouge2": 2.0,
+      "rougeL": 15.69,
+      "output_sample": " The future of AI is bright, but it requires careful planning and innovation to ensure its widespread adoption. \n\nThe passage discusses how artificial intelligence (AI) has transformed various sectors, including healthcare diagnostics, financial fraud detection, and machine learning models, which have become increasingly complex due to their ability to process vast amounts of data quickly. While these advancements bring benefits such as improved accuracy and efficiency, they also present"
+    }
+  ],
+  "kv_cache_comparison": {
+    "kv_cache_enabled": {
+      "use_cache": true,
+      "median_latency_s": 1.9781,
+      "mean_latency_s": 1.9781,
+      "tokens_generated": 64,
+      "throughput_tokens_sec": 32.36,
+      "incremental_memory_mb": 5.49,
+      "total_peak_memory_mb": 956.07,
+      "text": " Despite these efforts, there is still a long way to go before AI can fully replace human decision-making in critical applications like autonomous vehicles or medical diagnosis.\n\nThe passage discusses how artificial intelligence (AI) has transformed various sectors, including healthcare diagnostics and financial fraud detection. While it offers substantial benefits through its ability to process vast amounts"
+    },
+    "kv_cache_disabled": {
+      "use_cache": false,
+      "median_latency_s": 2.3604,
+      "mean_latency_s": 2.3604,
+      "tokens_generated": 64,
+      "throughput_tokens_sec": 27.11,
+      "incremental_memory_mb": 8.99,
+      "total_peak_memory_mb": 959.57,
+      "text": " Despite these efforts, there is still a long way to go before AI can fully replace human decision-making in critical applications like autonomous vehicles or medical diagnosis.\n\nThe passage discusses how artificial intelligence (AI) has transformed various sectors, including healthcare diagnostics and financial fraud detection. While it excels at analyzing vast amounts of data, its"
+    },
+    "speedup_factor": 1.19,
+    "explanation": "Enabling KV cache achieved a 1.19x speedup (1.9781s vs 2.3604s median latency). Standard KV cache stores past key/value states in memory to avoid quadratic recomputation, trading runtime RAM/VRAM for significantly higher decoding throughput."
+  }
+}
