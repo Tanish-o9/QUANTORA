@@ -1,0 +1,63 @@
+[
+  {
+    "id": "mmlu-ml-01",
+    "question": "Which of the following quantization schemes represents weights using a scale and a 4-bit NormalFloat distribution designed specifically for normally distributed neural network weights?",
+    "options": {
+      "A": "INT8 Uniform",
+      "B": "NF4 (NormalFloat4)",
+      "C": "FP16 Standard",
+      "D": "Binary Net"
+    },
+    "answer": "B",
+    "topic": "Machine Learning Systems"
+  },
+  {
+    "id": "mmlu-ml-02",
+    "question": "What is the primary computational bottleneck in autoregressive token generation during large language model inference with batch size 1?",
+    "options": {
+      "A": "Compute throughput (FLOPs bound)",
+      "B": "Memory bandwidth (Memory-bound)",
+      "C": "Disk I/O read operations",
+      "D": "PCIe bus transfer latency"
+    },
+    "answer": "B",
+    "topic": "LLM Inference"
+  },
+  {
+    "id": "mmlu-ml-03",
+    "question": "In the FlashAttention algorithm, how is the intermediate attention matrix O(N^2) memory consumption avoided?",
+    "options": {
+      "A": "By quantizing the weights to 1-bit",
+      "B": "By dropping 50% of the attention heads randomly",
+      "C": "By tiling inputs and computing softmax incrementally in GPU SRAM without materializing the full matrix in HBM",
+      "D": "By replacing multi-head attention with a single feed-forward layer"
+    },
+    "answer": "C",
+    "topic": "Transformer Architecture"
+  },
+  {
+    "id": "mmlu-math-01",
+    "question": "If a 7-billion parameter model is loaded in 16-bit precision (FP16), how much VRAM is required strictly for the model weights?",
+    "options": {
+      "A": "Approximately 7 GB",
+      "B": "Approximately 14 GB",
+      "C": "Approximately 28 GB",
+      "D": "Approximately 3.5 GB"
+    },
+    "answer": "B",
+    "topic": "Model Sizing"
+  },
+  {
+    "id": "mmlu-cs-01",
+    "question": "What does PEFT Low-Rank Adaptation (LoRA) freeze during fine-tuning?",
+    "options": {
+      "A": "Only the embedding layer",
+      "B": "The adapter weights while updating the base weights",
+      "C": "The pretrained base model weights while updating low-rank decomposition matrices",
+      "D": "All layers except the final classification head"
+    },
+    "answer": "C",
+    "topic": "PEFT & Fine-Tuning"
+  }
+]
+
