@@ -1,6 +1,11 @@
 # ⚡ QUANTORA
 ### LLM Performance & Optimization Engineering Platform
 
+[![CI/CD Pipeline](https://github.com/Tanish-o9/QUANTORA/actions/workflows/ci.yml/badge.svg)](https://github.com/Tanish-o9/QUANTORA/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![PyTorch 2.6+](https://img.shields.io/badge/PyTorch-2.6+-ee4c2c.svg)](https://pytorch.org/)
+
 **Benchmark. Analyze. Optimize.**
 
 **Quantora** is a production-grade ML systems engineering and benchmarking suite designed to measure the real-world resource footprints, runtime latencies, throughput profiles, and output qualities of open-source Large Language Models (LLMs) across precision levels (FP32, FP16, BF16, INT8, INT4), KV cache policies, and PEFT Low-Rank Adaptation (LoRA) configurations.
@@ -16,23 +21,31 @@ The repository adheres to a strict, human-written, decoupled modular design:
 ```
 QUANTORA/
 │
-├── app.py                  # Professional Streamlit dashboard & analytics UI
-├── cli.py                  # Terminal CLI for automated headless benchmarks & history
-├── model_engine.py         # Hugging Face model lifecycle, device placement & streaming inference
-├── benchmark_engine.py     # Controlled benchmark trials, CUDA-sync timing & NVML energy telemetry
-├── optimizer.py            # Hardware validation, quantization, speculative decoding, SDPA & LoRA
-├── evaluator.py            # ROUGE, token F1 & MMLU multi-choice reasoning evaluation
-├── storage.py              # SQLite persistence, Pareto recommender & CSV/JSON export
-├── requirements.txt        # Minimal, explicit project dependencies
-├── LICENSE                 # MIT Open-Source License
-├── README.md               # Architecture documentation, setup & methodology
+├── .github/
+│   └── workflows/
+│       └── ci.yml              # Automated GitHub Actions CI/CD pipeline
+├── tests/
+│   ├── test_optimizer.py       # Hardware detection, quantization & KV cache tests
+│   ├── test_evaluator.py       # ROUGE & semantic similarity evaluation tests
+│   ├── test_storage.py         # SQLite persistence & Pareto recommender tests
+│   └── test_cli.py             # Headless CLI command smoke tests
+├── app.py                      # Professional Streamlit dashboard & analytics UI
+├── cli.py                      # Terminal CLI for automated headless benchmarks & history
+├── model_engine.py             # Hugging Face model lifecycle, device placement & streaming inference
+├── benchmark_engine.py         # Controlled benchmark trials, CUDA-sync timing & NVML energy telemetry
+├── optimizer.py                # Hardware validation, quantization, KV cache & LoRA
+├── evaluator.py                # ROUGE, token F1 & reasoning evaluation
+├── storage.py                  # SQLite persistence, Pareto recommender & CSV/JSON export
+├── requirements.txt            # Minimal, explicit project dependencies
+├── LICENSE                     # MIT Open-Source License
+├── README.md                   # Architecture documentation, setup & methodology
 │
 ├── data/
-│   ├── sample_prompts.json # Fixed prompts across Summarization, Reasoning, Code & QA
-│   └── reasoning_eval.json # Standardized ML Systems & LLM reasoning benchmark questions
+│   ├── sample_prompts.json     # Fixed prompts across Summarization, Reasoning, Code & QA
+│   └── reasoning_eval.json     # Standardized ML Systems & LLM reasoning benchmark questions
 │
 └── results/
-    ├── experiments.db      # SQLite database storing benchmark runs
+    ├── experiments.db          # SQLite database storing benchmark runs
     ├── benchmark_results.csv
     └── benchmark_results.json
 ```
