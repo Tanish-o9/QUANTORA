@@ -1,0 +1,74 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-syntax:
+    name: Code Syntax & Integrity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Syntax Compilation Check
+        run: |
+          python -m py_compile app.py model_engine.py benchmark_engine.py optimizer.py evaluator.py storage.py cli.py
+          python -m py_compile tests/*.py
+
+  test-suite:
+    name: Unit & Integration Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ "3.11", "3.12" ]
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install CPU PyTorch
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Install Project Dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Run Pytest Suite
+        run: |
+          pytest -v tests/
+
+      - name: Smoke Test Headless CLI
+        run: |
+          python cli.py hardware
+          python cli.py history
+          python cli.py recommend --budget 1500 --latency 3.0
+          python cli.py export
+
+      - name: Verify Streamlit App Module
+        run: |
+          streamlit --help
+          python -c "import app; print('[OK] Streamlit application module loaded successfully')"
