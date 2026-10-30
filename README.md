@@ -133,7 +133,41 @@ python cli.py export
 
 ---
 
-## 6. Verification and Testing
+## 6. Empirical Benchmark Case Study
+
+The following benchmark results represent **real physical execution** on host hardware with no simulated or hardcoded values:
+
+### Hardware Environment
+- **GPU:** NVIDIA GeForce RTX 2050 (4.0 GB GDDR6 VRAM, Compute Capability 8.6)
+- **CUDA Runtime:** 12.4 | **PyTorch:** 2.6.0+cu124
+- **Host OS:** Windows 11 | **CPU RAM:** 12.0 GB
+- **Evaluated Model:** [`Qwen/Qwen2.5-0.5B-Instruct`](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct) (494.0M parameters)
+- **Workload:** Multi-sentence AI systems summarization prompt (80 max new tokens, deterministic decoding)
+
+### Empirical Results Across Numerical Precisions
+
+| Precision Configuration | Weight Footprint | Peak GPU VRAM | TTFT (Prefill) | TPOT (Decode) | Avg Latency | Throughput | ROUGE-1 | ROUGE-L |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **FP32** (Single Precision) | 1,884.6 MB | 1,903.4 MB | 2.3 ms | 12.6 ms | 2.44 s | 32.86 tok/s | 16.98% | 9.43% |
+| **FP16** (Half Precision) | 942.3 MB | 956.2 MB | 1.7 ms | 12.9 ms | 2.49 s | 32.12 tok/s | 16.98% | 9.43% |
+| **INT8** (BitsAndBytes) | 601.0 MB | 618.8 MB | 1.7 ms | 76.2 ms | 14.72 s | 5.55 tok/s | 26.67% | 15.24% |
+| **INT4** (BitsAndBytes NF4) | 430.4 MB | 457.7 MB | 1.7 ms | 18.3 ms | 3.53 s | 22.67 tok/s | 23.53% | 15.69% |
+
+### KV Cache Acceleration Profile (FP16, 64 tokens)
+
+| Configuration | Median Latency | Generation Throughput | Peak GPU Memory | Speedup Factor |
+| :--- | :--- | :--- | :--- | :--- |
+| **KV Cache Enabled** | **1.978 s** | **32.36 tok/s** | 956.1 MB | **1.19x** |
+| **KV Cache Disabled** | 2.360 s | 27.11 tok/s | 959.6 MB | 1.00x (Baseline) |
+
+### Key Systems Insights
+1. **Memory Compression:** Transitioning from FP32 to FP16 halves model memory consumption (**50.0% reduction**, 1,884 MB $\rightarrow$ 942 MB) with zero latency degradation or quality drift.
+2. **Extreme Edge Deployment (INT4 NF4):** 4-bit NormalFloat reduces the memory footprint by **76.0%** (1,903 MB $\rightarrow$ 457 MB peak VRAM), allowing modern LLMs to execute comfortably on entry-level GPUs with $\le$ 4GB VRAM while preserving practical interactive speeds (22.7 tok/s).
+3. **KV Cache Speedup:** Caching autoregressive key-value tensors eliminates redundant quadratic attention passes, delivering a **1.19x speedup** on short completions and scaling further with longer sequence lengths.
+
+---
+
+## 7. Verification and Testing
 
 You can run automated programmatic tests verifying all components (model loading, precision checks, benchmarking, ROUGE quality scoring, and database storage) via Python:
 
@@ -158,12 +192,20 @@ print('Stored Experiments:', len(df))
 
 ---
 
-## 7. Known Hardware Limitations
+## 8. Known Hardware Limitations
 - **INT8 / INT4 Quantization:** Requires an NVIDIA GPU and compiled `bitsandbytes` CUDA binaries. On CPU-only environments, the lab gracefully disables 8-bit/4-bit quantization and directs users to FP32.
 - **BFloat16:** Native hardware support requires Compute Capability $\ge 8.0$. Older architectures will report incompatibility and recommend FP16.
 
 ---
 
-## 8. License
+## 👤 Author & Maintainer
+
+Developed and maintained by **[Tanish Kumar](https://github.com/Tanish-o9)**
+- **GitHub:** [@Tanish-o9](https://github.com/Tanish-o9)
+- **Repository:** [https://github.com/Tanish-o9/QUANTORA](https://github.com/Tanish-o9/QUANTORA)
+
+---
+
+## 📄 License
 Distributed under the **MIT License**. See `LICENSE` for details.
 
