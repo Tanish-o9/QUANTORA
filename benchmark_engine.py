@@ -285,6 +285,179 @@ def run_batched_throughput_comparison(
     return results
 
 
+def run_context_length_scaling(
+    model: Any,
+    tokenizer: Any,
+    base_text: Optional[str] = None,
+    context_lengths: Optional[List[int]] = None,
+    max_new_tokens: int = 32,
+    device: str = "cuda",
+) -> List[Dict[str, Any]]:
+    """Benchmark prefill latency (TTFT) and memory scaling across varying context lengths.
+
+    Demonstrates quadratic attention compute growth during prefill and linear KV cache
+    memory expansion across input token lengths (e.g., 128 to 2048+ tokens).
+    """
+    if context_lengths is None:
+        context_lengths = [128, 256, 512, 1024]
+
+    if not base_text:
+        base_text = (
+            "Large language models rely on multi-head self-attention mechanisms where each token "
+            "attends to all prior tokens in the sequence. During the autoregressive generation phase, "
+            "key and value activation vectors are cached to avoid quadratic recomputation. "
+            "However, as the context length scales into thousands of tokens, the prefill phase consumes "
+            "significant memory bandwidth and compute resources. Efficient architectures utilize "
+            "FlashAttention, grouped-query attention, and speculative decoding to maintain interactivity."
+        )
+
+    is_cuda = device == "cuda" and torch.cuda.is_available()
+    results = []
+
+    # Encode base text tokens
+    base_tokens = tokenizer.encode(base_text, add_special_tokens=False)
+    if not base_tokens:
+        base_tokens = [100] * 50
+
+    for target_len in context_lengths:
+        # Build prompt of exact target_len
+        repeats = (target_len // len(base_tokens)) + 2
+        extended_tokens = (base_tokens * repeats)[:target_len]
+        prompt_text = tokenizer.decode(extended_tokens)
+        inputs = tokenizer(prompt_text, return_tensors="pt")
+
+        if is_cuda:
+            inputs = {k: v.to("cuda") for k, v in inputs.items()}
+            torch.cuda.synchronize()
+            torch.cuda.reset_peak_memory_stats()
+            start_mem = torch.cuda.memory_allocated() / (1024 ** 2)
+
+        # Warm-up prefill run
+        with torch.inference_mode():
+            _ = model.generate(**inputs, max_new_tokens=1, do_sample=False, pad_token_id=tokenizer.eos_token_id)
+        if is_cuda:
+            torch.cuda.synchronize()
+
+        # Measured generation run
+        streamer = BenchmarkTokenStreamer()
+        t0 = time.perf_counter()
+        with torch.inference_mode():
+            outputs = model.generate(
+                **inputs,
+                streamer=streamer,
+                max_new_tokens=max_new_tokens,
+                do_sample=False,
+                pad_token_id=tokenizer.eos_token_id,
+            )
+        if is_cuda:
+            torch.cuda.synchronize()
+            peak_vram = torch.cuda.max_memory_allocated() / (1024 ** 2)
+            inc_mem = peak_vram - start_mem
+        else:
+            peak_vram = None
+            inc_mem = None
+
+        t1 = time.perf_counter()
+        total_lat = t1 - t0
+        ttft = streamer.get_ttft() or (total_lat / max(1, max_new_tokens))
+        tpot = streamer.get_tpot() or (total_lat / max(1, max_new_tokens))
+        new_tokens = outputs.shape[-1] - inputs["input_ids"].shape[-1]
+        throughput = new_tokens / total_lat if total_lat > 0 else 0.0
+
+        results.append({
+            "context_length_tokens": int(inputs["input_ids"].shape[-1]),
+            "max_new_tokens": int(new_tokens),
+            "ttft_s": round(ttft, 4),
+            "tpot_ms": round(tpot * 1000.0, 2),
+            "total_latency_s": round(total_lat, 4),
+            "throughput_tok_s": round(throughput, 2),
+            "peak_vram_mb": round(peak_vram, 2) if peak_vram else None,
+            "incremental_vram_mb": round(max(0.0, inc_mem), 2) if inc_mem else None,
+        })
+
+    return results
+
+
+def benchmark_speculative_decoding(
+    target_model: Any,
+    draft_model: Any,
+    tokenizer: Any,
+    prompt: str,
+    max_new_tokens: int = 64,
+    device: str = "cuda",
+) -> Dict[str, Any]:
+    """Benchmark speculative decoding (Draft/Assistant Model + Target Model) against baseline autoregressive decoding.
+
+    Speculative decoding uses a smaller draft model to propose K candidate tokens,
+    which the larger target model verifies in parallel in a single forward pass.
+    """
+    is_cuda = device == "cuda" and torch.cuda.is_available()
+    inputs = tokenizer(prompt, return_tensors="pt")
+    if is_cuda:
+        inputs = {k: v.to("cuda") for k, v in inputs.items()}
+        torch.cuda.synchronize()
+
+    # 1. Baseline Run: Target Model alone
+    t0_base = time.perf_counter()
+    with torch.inference_mode():
+        base_outputs = target_model.generate(
+            **inputs,
+            max_new_tokens=max_new_tokens,
+            do_sample=False,
+            pad_token_id=tokenizer.eos_token_id,
+        )
+    if is_cuda:
+        torch.cuda.synchronize()
+    t1_base = time.perf_counter()
+    base_lat = t1_base - t0_base
+    base_tokens = base_outputs.shape[-1] - inputs["input_ids"].shape[-1]
+    base_tp = base_tokens / base_lat if base_lat > 0 else 0.0
+    base_text = tokenizer.decode(base_outputs[0][inputs["input_ids"].shape[-1]:], skip_special_tokens=True)
+
+    # 2. Speculative Run: Target Model + Draft Model (assistant_model)
+    t0_spec = time.perf_counter()
+    with torch.inference_mode():
+        spec_outputs = target_model.generate(
+            **inputs,
+            assistant_model=draft_model,
+            max_new_tokens=max_new_tokens,
+            do_sample=False,
+            pad_token_id=tokenizer.eos_token_id,
+        )
+    if is_cuda:
+        torch.cuda.synchronize()
+    t1_spec = time.perf_counter()
+    spec_lat = t1_spec - t0_spec
+    spec_tokens = spec_outputs.shape[-1] - inputs["input_ids"].shape[-1]
+    spec_tp = spec_tokens / spec_lat if spec_lat > 0 else 0.0
+    spec_text = tokenizer.decode(spec_outputs[0][inputs["input_ids"].shape[-1]:], skip_special_tokens=True)
+
+    speedup = round(base_lat / spec_lat, 2) if spec_lat > 0 else 1.0
+
+    # Token match agreement
+    base_ids = base_outputs[0].tolist()
+    spec_ids = spec_outputs[0].tolist()
+    min_len = min(len(base_ids), len(spec_ids))
+    matches = sum(1 for i in range(min_len) if base_ids[i] == spec_ids[i])
+    match_rate = round(matches / max(1, min_len) * 100.0, 1)
+
+    return {
+        "baseline_latency_s": round(base_lat, 4),
+        "speculative_latency_s": round(spec_lat, 4),
+        "speedup_factor": speedup,
+        "baseline_throughput_tok_s": round(base_tp, 2),
+        "speculative_throughput_tok_s": round(spec_tp, 2),
+        "output_match_rate_pct": match_rate,
+        "baseline_text": base_text,
+        "speculative_text": spec_text,
+        "explanation": (
+            f"Speculative decoding achieved a {speedup}x speedup ({spec_lat:.3f}s vs {base_lat:.3f}s) "
+            f"with {match_rate}% token equivalence. The draft model generated candidate tokens that the "
+            "target model validated concurrently in batched forward passes."
+        ),
+    }
+
+
 # Singleton benchmark engine
 _BENCHMARK_INSTANCE: Optional[BenchmarkEngine] = None
 

@@ -67,8 +67,10 @@ jobs:
           python cli.py history
           python cli.py recommend --budget 1500 --latency 3.0
           python cli.py export
+          python cli.py report
 
       - name: Verify Streamlit App Module
         run: |
           streamlit --help
           python -c "import app; print('[OK] Streamlit application module loaded successfully')"
+

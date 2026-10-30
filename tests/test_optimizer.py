@@ -79,3 +79,14 @@ def test_kv_cache_calculations():
     mb = format_bytes_to_mb(calculated_bytes)
     assert mb == 96.0  # 100663296 / (1024^2) = 96.0 MB
 
+
+def test_quantize_model_cpu():
+    """Verify PyTorch dynamic INT8 linear quantization for CPU."""
+    from optimizer import quantize_model_cpu
+    linear = torch.nn.Linear(16, 16)
+    q_linear = quantize_model_cpu(linear)
+    assert q_linear is not None
+    x = torch.randn(1, 16)
+    out = q_linear(x)
+    assert out.shape == (1, 16)
+

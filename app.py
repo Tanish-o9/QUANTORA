@@ -16,7 +16,12 @@ import plotly.graph_objects as go
 import streamlit as st
 import torch
 
-from benchmark_engine import get_benchmark_engine, run_batched_throughput_comparison
+from benchmark_engine import (
+    get_benchmark_engine,
+    run_batched_throughput_comparison,
+    run_context_length_scaling,
+    benchmark_speculative_decoding,
+)
 from evaluator import get_evaluator
 from model_engine import get_model_engine
 from optimizer import (
@@ -31,6 +36,7 @@ from optimizer import (
 from storage import (
     compute_comparison_metrics,
     export_results_to_csv_and_json,
+    generate_html_report,
     load_experiments,
     recommend_best_configuration,
     save_experiment,
@@ -410,6 +416,8 @@ with tab_opt:
             "PEFT LoRA Module",
             "Batched Concurrency Saturation Curve",
             "MMLU Reasoning Accuracy across Precisions",
+            "Context Length & Prefill Scaling (Stress Test)",
+            "Speculative Decoding (Draft + Target Acceleration)",
         ],
         horizontal=True,
     )
@@ -688,6 +696,109 @@ with tab_opt:
                     df_det = pd.DataFrame(eval_res["details"])
                     st.dataframe(df_det, use_container_width=True)
 
+    # -----------------------------------------------------------------------
+    # Domain 6: Context Length & Prefill Scaling (Stress Test)
+    # -----------------------------------------------------------------------
+    elif opt_choice.startswith("Context Length"):
+        st.markdown("### Context Length & Prefill Latency Scaling")
+        st.markdown(
+            "Investigates the computational cost of the **prefill phase (TTFT)** and **KV cache memory expansion** "
+            "as input sequence length increases from 128 to 2048+ tokens."
+        )
+        if not model_engine.is_loaded():
+            st.warning("Please load a model in Model Lab first.")
+        else:
+            col_cx1, col_cx2 = st.columns(2)
+            with col_cx1:
+                cx_max_tok = st.slider("New Tokens to Generate per Step:", 8, 64, 16)
+            with col_cx2:
+                cx_options = st.multiselect(
+                    "Context Lengths (Tokens):",
+                    [64, 128, 256, 512, 1024, 2048],
+                    default=[128, 256, 512, 1024],
+                )
+
+            if st.button("Run Context Scaling Stress Test", type="primary"):
+                if not cx_options:
+                    st.error("Select at least one context length.")
+                else:
+                    with st.spinner("Executing context scaling trials..."):
+                        cx_res = run_context_length_scaling(
+                            model=model_engine.model,
+                            tokenizer=model_engine.tokenizer,
+                            context_lengths=sorted(cx_options),
+                            max_new_tokens=cx_max_tok,
+                            device=model_engine.device,
+                        )
+                        df_cx = pd.DataFrame(cx_res)
+                        st.dataframe(df_cx, use_container_width=True)
+
+                        fig_ttft = px.line(
+                            df_cx,
+                            x="context_length_tokens",
+                            y="ttft_s",
+                            markers=True,
+                            title="Prefill Latency (TTFT) vs Context Length",
+                            labels={"context_length_tokens": "Input Context (Tokens)", "ttft_s": "Time to First Token (s)"},
+                        )
+                        st.plotly_chart(fig_ttft, use_container_width=True)
+
+                        if "peak_vram_mb" in df_cx and df_cx["peak_vram_mb"].iloc[0] is not None:
+                            fig_vram = px.bar(
+                                df_cx,
+                                x="context_length_tokens",
+                                y="peak_vram_mb",
+                                title="Peak GPU Memory (MB) vs Context Length",
+                                labels={"context_length_tokens": "Input Context (Tokens)", "peak_vram_mb": "Peak VRAM (MB)"},
+                                color="peak_vram_mb",
+                            )
+                            st.plotly_chart(fig_vram, use_container_width=True)
+
+    # -----------------------------------------------------------------------
+    # Domain 7: Speculative Decoding (Draft + Target Acceleration)
+    # -----------------------------------------------------------------------
+    elif opt_choice.startswith("Speculative Decoding"):
+        st.markdown("### Speculative Decoding (Assistant/Draft Model Acceleration)")
+        st.markdown(
+            "Speculative decoding utilizes a small, fast **draft model** to generate candidate token sequences "
+            "that the larger **target model** verifies simultaneously in a single forward pass, achieving "
+            "higher decoding throughput without output quality degradation."
+        )
+        if not model_engine.is_loaded():
+            st.warning("Please load the primary Target Model in Model Lab first.")
+        else:
+            draft_model_id = st.text_input("Draft/Assistant Model Hugging Face ID:", value="Qwen/Qwen2.5-0.5B-Instruct")
+            spec_prompt = st.text_area("Benchmark Prompt:", value="Explain the principles of transformer self-attention and key-value caching in 3 sentences.")
+            spec_tokens = st.slider("Max New Tokens:", 16, 128, 64)
+
+            if st.button("Benchmark Speculative vs Baseline Decoding", type="primary"):
+                with st.spinner("Loading draft model and executing speculative decoding..."):
+                    try:
+                        from transformers import AutoModelForCausalLM
+                        draft_model = AutoModelForCausalLM.from_pretrained(
+                            draft_model_id,
+                            torch_dtype=model_engine.model.dtype if hasattr(model_engine.model, 'dtype') else torch.float16,
+                            device_map="auto" if model_engine.device == "cuda" else "cpu"
+                        )
+                        res_spec = benchmark_speculative_decoding(
+                            target_model=model_engine.model,
+                            draft_model=draft_model,
+                            tokenizer=model_engine.tokenizer,
+                            prompt=spec_prompt,
+                            max_new_tokens=spec_tokens,
+                            device=model_engine.device,
+                        )
+                        c_sp1, c_sp2, c_sp3 = st.columns(3)
+                        c_sp1.metric("Speedup Factor", f"{res_spec['speedup_factor']}x")
+                        c_sp2.metric("Baseline Latency", f"{res_spec['baseline_latency_s']}s")
+                        c_sp3.metric("Speculative Latency", f"{res_spec['speculative_latency_s']}s")
+
+                        st.success(res_spec["explanation"])
+                        st.markdown("**Generated Text (Speculative):**")
+                        st.info(res_spec["speculative_text"])
+                    except Exception as e:
+                        st.error(f"Speculative decoding trial failed: {e}")
+
 # ===========================================================================
 # TAB 5: PERFORMANCE ANALYTICS
 # ===========================================================================
@@ -905,5 +1016,19 @@ with tab_reports:
                 data=report_md,
                 file_name="LLM_Efficiency_Report.md",
                 mime="text/markdown",
+                use_container_width=True,
+            )
+
+        # Standalone Executive HTML Report
+        st.markdown("#### 🌐 Standalone Executive HTML Report")
+        if st.button("Generate Standalone HTML Report", use_container_width=True):
+            html_path = generate_html_report()
+            with open(html_path, "r", encoding="utf-8") as f:
+                html_data = f.read()
+            st.download_button(
+                label="Download Executive Report (.html)",
+                data=html_data,
+                file_name="Quantora_Executive_Report.html",
+                mime="text/html",
                 use_container_width=True,
             )

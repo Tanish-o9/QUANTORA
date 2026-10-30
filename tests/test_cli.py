@@ -1,37 +1,46 @@
-"""tests/test_cli.py - Smoke tests for Quantora's headless CLI commands."""
+"""tests/test_cli.py - Fast in-process tests for Quantora's CLI commands."""
 
-import subprocess
 import sys
+from cli import main
 
 
-def test_cli_hardware():
-    """Verify `python cli.py hardware` executes with exit code 0."""
-    res = subprocess.run(
-        [sys.executable, "cli.py", "hardware"],
-        capture_output=True,
-        text=True,
-    )
-    assert res.returncode == 0
-    assert "TELEMETRY" in res.stdout
-    assert "cuda_available" in res.stdout
+def test_cli_hardware(monkeypatch, capsys):
+    """Verify `hardware` subcommand executes and prints telemetry."""
+    monkeypatch.setattr(sys, "argv", ["cli.py", "hardware"])
+    main()
+    captured = capsys.readouterr()
+    assert "TELEMETRY" in captured.out
+    assert "cuda_available" in captured.out
 
 
-def test_cli_history():
-    """Verify `python cli.py history` executes with exit code 0."""
-    res = subprocess.run(
-        [sys.executable, "cli.py", "history"],
-        capture_output=True,
-        text=True,
-    )
-    assert res.returncode == 0
+def test_cli_history(monkeypatch, capsys):
+    """Verify `history` subcommand executes cleanly."""
+    monkeypatch.setattr(sys, "argv", ["cli.py", "history"])
+    main()
+    # Should not raise exception
+    assert True
 
 
-def test_cli_recommend():
-    """Verify `python cli.py recommend` executes with exit code 0."""
-    res = subprocess.run(
-        [sys.executable, "cli.py", "recommend", "--budget", "2000", "--latency", "5.0"],
-        capture_output=True,
-        text=True,
-    )
-    assert res.returncode == 0
+def test_cli_recommend(monkeypatch, capsys):
+    """Verify `recommend` subcommand executes with budget constraints."""
+    monkeypatch.setattr(sys, "argv", ["cli.py", "recommend", "--budget", "2000", "--latency", "5.0"])
+    main()
+    captured = capsys.readouterr()
+    assert "OPTIMAL CONFIGURATION" in captured.out or "No configuration" in captured.out
 
+
+def test_cli_export(monkeypatch, capsys):
+    """Verify `export` subcommand exports CSV and JSON."""
+    monkeypatch.setattr(sys, "argv", ["cli.py", "export"])
+    main()
+    captured = capsys.readouterr()
+    assert "[Export]" in captured.out
+
+
+def test_cli_report(monkeypatch, capsys, tmp_path):
+    """Verify `report` subcommand generates standalone HTML report."""
+    out_file = str(tmp_path / "cli_report.html")
+    monkeypatch.setattr(sys, "argv", ["cli.py", "report", "--output", out_file])
+    main()
+    captured = capsys.readouterr()
+    assert "[Report]" in captured.out

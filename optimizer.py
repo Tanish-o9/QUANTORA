@@ -179,6 +179,21 @@ def get_model_loading_kwargs(precision: str, device: str) -> Dict[str, Any]:
     return kwargs
 
 
+def quantize_model_cpu(model: Any) -> Any:
+    """Apply PyTorch dynamic INT8 quantization to linear layers for CPU execution.
+
+    Allows CPU-bound systems to run integer-quantized inference without CUDA or BitsAndBytes.
+    """
+    try:
+        return torch.ao.quantization.quantize_dynamic(
+            model,
+            {torch.nn.Linear},
+            dtype=torch.qint8,
+        )
+    except Exception as e:
+        raise RuntimeError(f"PyTorch dynamic CPU quantization failed: {e}") from e
+
+
 # ---------------------------------------------------------------------------
 # KV Cache Analysis
 # ---------------------------------------------------------------------------

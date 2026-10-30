@@ -9,6 +9,7 @@ from storage import (
     save_experiment,
     load_experiments,
     export_results_to_csv_and_json,
+    generate_html_report,
     recommend_best_configuration,
 )
 
@@ -73,6 +74,15 @@ def test_export_utilities(tmp_path):
     csv_path, json_path = export_results_to_csv_and_json(output_dir=out_dir, db_path=test_db)
     assert os.path.exists(csv_path)
     assert os.path.exists(json_path)
+
+    # Executive HTML report
+    html_file = str(tmp_path / "report.html")
+    html_out = generate_html_report(db_path=test_db, output_path=html_file)
+    assert os.path.exists(html_out)
+    with open(html_out, "r", encoding="utf-8") as f:
+        html_str = f.read()
+    assert "QUANTORA" in html_str
+    assert "Executive Report" in html_str
 
 
 def test_recommend_optimal_configuration(tmp_path):

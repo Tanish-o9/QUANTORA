@@ -85,6 +85,12 @@ def cmd_export(args):
     print(f"[Export] Saved JSON: {json_p}")
 
 
+def cmd_report(args):
+    from storage import generate_html_report
+    out = generate_html_report(output_path=args.output)
+    print(f"[Report] Generated executive HTML benchmark report: {out}")
+
+
 def cmd_recommend(args):
     rec = recommend_best_configuration(max_memory_mb=args.budget, max_latency_s=args.latency)
     if rec:
@@ -127,6 +133,11 @@ def main():
     # Export
     p_exp = subparsers.add_parser("export", help="Export benchmark history to CSV and JSON")
     p_exp.set_defaults(func=cmd_export)
+
+    # Report
+    p_rep = subparsers.add_parser("report", help="Generate standalone executive HTML benchmark report")
+    p_rep.add_argument("--output", default="results/benchmark_report.html", help="Path to output HTML report")
+    p_rep.set_defaults(func=cmd_report)
 
     # Recommend
     p_rec = subparsers.add_parser("recommend", help="Find Pareto-optimal configuration")

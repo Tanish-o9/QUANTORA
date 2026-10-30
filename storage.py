@@ -3,6 +3,7 @@
 import json
 import os
 import sqlite3
+import time
 import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
@@ -258,4 +259,271 @@ def recommend_best_configuration(
     # From matching candidates, choose the one with highest throughput
     best_row = filtered.sort_values(by="throughput_tokens_sec", ascending=False).iloc[0]
     return best_row.to_dict()
+
+
+def generate_html_report(
+    db_path: str = DB_PATH,
+    output_path: str = "results/benchmark_report.html",
+) -> str:
+    """Generate a self-contained, professional executive HTML benchmark report.
+
+    Includes executive summary cards, full performance metrics table,
+    hardware telemetry, and print-ready CSS for PDF generation.
+    """
+    df = load_experiments(db_path=db_path)
+    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+
+    total_runs = len(df)
+    unique_models = df["model_id"].nunique() if not df.empty and "model_id" in df else 0
+    fastest_tok_s = df["throughput_tokens_sec"].max() if not df.empty and "throughput_tokens_sec" in df else 0.0
+    lowest_mem_mb = df["peak_gpu_allocated_mb"].min() if not df.empty and "peak_gpu_allocated_mb" in df else 0.0
+
+    # Best overall recommendation
+    rec = recommend_best_configuration(db_path=db_path)
+    rec_text = "N/A"
+    if rec:
+        rec_text = f"<strong>{rec.get('model_id')}</strong> ({str(rec.get('precision')).upper()}) - {rec.get('throughput_tokens_sec', 0.0):.1f} tok/s | {rec.get('avg_latency_s', 0.0):.2f}s latency"
+
+    rows_html = ""
+    if not df.empty:
+        for _, row in df.iterrows():
+            ts = str(row.get("timestamp", ""))[:19]
+            mod = str(row.get("model_id", ""))
+            prec = str(row.get("precision", "")).upper()
+            dev = str(row.get("device", "")).upper()
+
+            lat_val = row.get("avg_latency_s")
+            lat = f"{float(lat_val):.3f}s" if pd.notna(lat_val) and lat_val is not None else "-"
+
+            ttft_val = row.get("ttft_s")
+            ttft = f"{float(ttft_val):.3f}s" if pd.notna(ttft_val) and ttft_val is not None else "-"
+
+            tp_val = row.get("throughput_tokens_sec")
+            tp = f"{float(tp_val):.1f} tok/s" if pd.notna(tp_val) and tp_val is not None else "-"
+
+            gpu_mem = row.get("peak_gpu_allocated_mb")
+            cpu_mem = row.get("peak_cpu_ram_mb")
+            if pd.notna(gpu_mem) and gpu_mem is not None:
+                mem = f"{float(gpu_mem):.1f} MB"
+            elif pd.notna(cpu_mem) and cpu_mem is not None:
+                mem = f"{float(cpu_mem):.1f} MB (CPU)"
+            else:
+                mem = "-"
+
+            rL_val = row.get("rougeL")
+            rL = f"{float(rL_val):.1f}%" if pd.notna(rL_val) and rL_val is not None else "-"
+
+            rows_html += f"""
+            <tr>
+              <td>{ts}</td>
+              <td><code>{mod}</code></td>
+              <td><span class="badge">{prec}</span></td>
+              <td>{dev}</td>
+              <td>{lat}</td>
+              <td>{ttft}</td>
+              <td><strong>{tp}</strong></td>
+              <td>{mem}</td>
+              <td>{rL}</td>
+            </tr>
+            """
+
+    html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quantora — Executive Benchmark Report</title>
+<style>
+  :root {{
+    --primary: #4f46e5;
+    --primary-dark: #3730a3;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #0f172a;
+    --muted: #64748b;
+  }}
+  body {{
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 2.5rem 1.5rem;
+  }}
+  .container {{
+    max-width: 1100px;
+    margin: 0 auto;
+    background: var(--card);
+    padding: 2.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
+    border: 1px solid var(--border);
+  }}
+  .header {{
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 1.5rem;
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }}
+  .logo {{
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--primary);
+  }}
+  .subhead {{
+    color: var(--muted);
+    font-size: 0.95rem;
+    margin-top: 0.25rem;
+  }}
+  .cards-grid {{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }}
+  .stat-card {{
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+  }}
+  .stat-card .label {{
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }}
+  .stat-card .val {{
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-top: 0.4rem;
+  }}
+  .recommendation-box {{
+    background: #eef2ff;
+    border-left: 4px solid var(--primary);
+    padding: 1rem 1.25rem;
+    border-radius: 4px;
+    margin-bottom: 2rem;
+    font-size: 0.95rem;
+  }}
+  table {{
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+  }}
+  th, td {{
+    padding: 0.75rem 0.9rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }}
+  th {{
+    background: var(--bg);
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+  }}
+  .badge {{
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 4px;
+    background: #e0e7ff;
+    color: var(--primary-dark);
+  }}
+  code {{
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.85rem;
+  }}
+  .footer {{
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.85rem;
+    display: flex;
+    justify-content: space-between;
+  }}
+  @media print {{
+    body {{ background: #fff; padding: 0; }}
+    .container {{ box-shadow: none; border: none; padding: 0; width: 100%; max-width: 100%; }}
+  }}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div>
+      <div class="logo">⚡ QUANTORA</div>
+      <div class="subhead">LLM Performance & Optimization Engineering Platform — Executive Report</div>
+    </div>
+    <div style="text-align: right; color: var(--muted); font-size: 0.85rem;">
+      Generated: {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}
+    </div>
+  </div>
+
+  <div class="cards-grid">
+    <div class="stat-card">
+      <div class="label">Total Benchmarks</div>
+      <div class="val">{total_runs}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Models Evaluated</div>
+      <div class="val">{unique_models}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Peak Throughput</div>
+      <div class="val">{fastest_tok_s:.1f} <span style="font-size: 0.9rem; color: var(--muted);">tok/s</span></div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Min VRAM Footprint</div>
+      <div class="val">{lowest_mem_mb:.1f} <span style="font-size: 0.9rem; color: var(--muted);">MB</span></div>
+    </div>
+  </div>
+
+  <div class="recommendation-box">
+    <strong>💡 Pareto-Optimal Recommendation:</strong> {rec_text}
+  </div>
+
+  <h3 style="margin-top: 2rem; margin-bottom: 0.5rem;">Benchmark Run History</h3>
+  <div style="overflow-x: auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Model ID</th>
+          <th>Precision</th>
+          <th>Device</th>
+          <th>Avg Latency</th>
+          <th>TTFT</th>
+          <th>Throughput</th>
+          <th>Peak VRAM</th>
+          <th>ROUGE-L</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows_html if rows_html else '<tr><td colspan="9" style="text-align: center; color: var(--muted);">No benchmark experiments recorded yet.</td></tr>'}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="footer">
+    <div>Developed & Maintained by <a href="https://github.com/Tanish-o9" style="color: var(--primary); text-decoration: none; font-weight: 600;">Tanish Kumar (@Tanish-o9)</a></div>
+    <div>Quantora ML Systems Lab &bull; <a href="https://github.com/Tanish-o9/QUANTORA" style="color: var(--muted);">GitHub</a></div>
+  </div>
+</div>
+</body>
+</html>
+"""
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(html_content)
+
+    return output_path
+
 
