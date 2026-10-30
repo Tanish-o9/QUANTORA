@@ -46,3 +46,4 @@ python cli.py benchmark --model Qwen/Qwen2.5-0.5B-Instruct --precision fp16 --tr
 GOTO end
 
 :end
+

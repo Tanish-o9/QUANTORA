@@ -29,3 +29,4 @@ dev:
 
 docker:
 	docker compose up --build
+
