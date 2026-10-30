@@ -120,11 +120,16 @@ To ensure high reproducibility across runs, the benchmarking engine enforces:
 ### Installation
 Clone or navigate to the project directory:
 ```bash
+git clone https://github.com/Tanish-o9/QUANTORA.git
 cd QUANTORA
 ```
 
-Install dependencies:
+Install dependencies & register the global `quantora` CLI:
 ```bash
+# Install package in editable mode with global CLI
+pip install -e .
+
+# Or install dependencies only
 pip install -r requirements.txt
 ```
 
@@ -132,37 +137,31 @@ pip install -r requirements.txt
 
 ## 5. Running the Application
 
-### Interactive Streamlit Dashboard
-Launch the web UI:
-```bash
-python -m streamlit run app.py
-```
-Open your browser at `http://localhost:8501`.
-
-### Headless CLI Benchmarking
-You can run automated benchmarks, query hardware specs, and inspect history directly from your terminal:
+### ⚡ Global CLI (`quantora`) & Headless Benchmarking
+Once installed with `pip install -e .`, you can use the `quantora` command from any terminal:
 ```bash
 # 1. Display hardware & library telemetry
-python cli.py hardware
+quantora hardware
 
 # 2. Run a full benchmark trial with live GPU energy telemetry
-python cli.py benchmark --model Qwen/Qwen2.5-0.5B-Instruct --precision fp16 --trials 3 --max-tokens 64
+quantora benchmark --model Qwen/Qwen2.5-0.5B-Instruct --precision fp16 --trials 3 --max-tokens 64
 
 # 3. View benchmark run history
-python cli.py history
+quantora history
 
 # 4. Find Pareto-optimal configuration based on memory and latency constraints
-python cli.py recommend --budget 1500 --latency 3.0
+quantora recommend --budget 1500 --latency 3.0
 
 # 5. Export history to CSV and JSON
-python cli.py export
+quantora export
 
 # 6. Generate standalone executive HTML benchmark report
-python cli.py report --output results/benchmark_report.html
+quantora report --output results/benchmark_report.html
 
-# 7. Compute sliding-window Perplexity (PPL) for model fluency & quantization degradation
-python cli.py perplexity --model Qwen/Qwen2.5-0.5B-Instruct --precision fp16
+# 7. Compute sliding-window Perplexity (PPL) for model fluency & quantization loss
+quantora perplexity --model Qwen/Qwen2.5-0.5B-Instruct --precision fp16
 ```
+*(You can also continue using `python cli.py <command>` without installation).*
 
 ### Docker & Microservices Deployment
 Run the complete Quantora engineering platform (Python Inference API + React Frontend) inside isolated containers:
