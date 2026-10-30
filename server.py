@@ -152,24 +152,25 @@ class QuantoraAPIHandler(BaseHTTPRequestHandler):
                 precision = body.get("precision", "fp16")
                 prompt = body.get("prompt", "Hello")
                 max_tokens = int(body.get("max_tokens", 64))
-                temperature = float(body.get("temperature", 0.7))
+                temperature = float(body.get("temperature", 0.0))
                 device = body.get("device", "cuda")
 
                 engine = get_model_engine()
                 engine.load_model(model_id=model_id, precision=precision, device=device)
 
-                t0 = time.perf_counter()
-                text = engine.generate_text(
+                res = engine.generate(
                     prompt=prompt,
                     max_new_tokens=max_tokens,
                     temperature=temperature,
                     do_sample=(temperature > 0),
                 )
-                duration = time.perf_counter() - t0
 
                 self._send_json(HTTPStatus.OK, {
-                    "generated_text": text,
-                    "duration_s": round(duration, 3),
+                    "generated_text": res["generated_text"],
+                    "duration_s": res.get("latency_seconds") or res.get("latency_s") or 0.0,
+                    "throughput_tokens_sec": res.get("throughput_tokens_per_sec") or res.get("throughput_tokens_sec") or 0.0,
+                    "ttft_s": res.get("ttft_seconds") or res.get("ttft_s"),
+                    "tpot_s": res.get("tpot_seconds") or res.get("tpot_s"),
                     "model_id": model_id,
                     "precision": precision,
                 })
@@ -193,6 +194,8 @@ class QuantoraAPIHandler(BaseHTTPRequestHandler):
             self._send_json(HTTPStatus.NOT_FOUND, {"error": f"Endpoint not found: {self.path}"})
 
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {
                 "error": str(e),
                 "type": type(e).__name__,
