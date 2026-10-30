@@ -10,7 +10,7 @@ import psutil
 import torch
 
 from evaluator import get_evaluator
-from model_engine import ModelEngine, get_model_engine
+from model_engine import BenchmarkTokenStreamer, ModelEngine, get_model_engine
 from optimizer import get_hardware_capabilities
 from storage import save_experiment
 
@@ -339,7 +339,8 @@ def run_context_length_scaling(
             torch.cuda.synchronize()
 
         # Measured generation run
-        streamer = BenchmarkTokenStreamer()
+        streamer = BenchmarkTokenStreamer(tokenizer, is_cuda=is_cuda)
+        streamer.start_timing()
         t0 = time.perf_counter()
         with torch.inference_mode():
             outputs = model.generate(
