@@ -111,7 +111,8 @@ def main():
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # Hardware
-    subparsers.add_parser("hardware", help="Display hardware & library capabilities")
+    p_hw = subparsers.add_parser("hardware", help="Display hardware & library capabilities")
+    p_hw.set_defaults(func=cmd_hardware)
 
     # Benchmark
     p_bench = subparsers.add_parser("benchmark", help="Run benchmark experiment")
