@@ -142,7 +142,23 @@ python cli.py recommend --budget 1500 --latency 3.0
 
 # 5. Export history to CSV and JSON
 python cli.py export
+
+# 6. Generate standalone executive HTML benchmark report
+python cli.py report --output results/benchmark_report.html
 ```
+
+### Docker Container Deployment
+Run the full Quantora engineering lab inside a self-contained container with zero local dependency conflicts:
+
+```bash
+# Build and run via Docker Compose
+docker-compose up --build
+
+# Or run directly via Docker CLI
+docker build -t quantora:latest .
+docker run -p 8501:8501 -v $(pwd)/results:/app/results quantora:latest
+```
+Access the dashboard at `http://localhost:8501`.
 
 ---
 
