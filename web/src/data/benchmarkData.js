@@ -170,3 +170,4 @@ export const QUANTIZATION_TAXONOMY = [
     best_for: "Serverless containerized cloud without GPU cost",
   },
 ];
+

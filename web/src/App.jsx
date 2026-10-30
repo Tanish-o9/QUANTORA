@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Navbar from './components/Navbar';
+import LiveOperationsLab from './components/LiveOperationsLab';
 import BenchmarkMatrix from './components/BenchmarkMatrix';
 import ParetoRecommender from './components/ParetoRecommender';
 import KVCacheCalculator from './components/KVCacheCalculator';
@@ -9,7 +10,7 @@ import QuantizationGuide from './components/QuantizationGuide';
 import { BENCHMARK_MODELS, HARDWARE_SPECS, KV_CACHE_DATA, CONTEXT_SCALING_SERIES } from './data/benchmarkData';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('matrix');
+  const [activeTab, setActiveTab] = useState('operations');
 
   // Client-side instant JSON export
   const handleExportJSON = () => {
@@ -84,6 +85,7 @@ export default function App() {
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {activeTab === 'operations' && <LiveOperationsLab />}
         {activeTab === 'matrix' && <BenchmarkMatrix />}
         {activeTab === 'recommender' && <ParetoRecommender />}
         {activeTab === 'kvcache' && <KVCacheCalculator />}

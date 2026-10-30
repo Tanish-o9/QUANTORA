@@ -4,6 +4,7 @@ import { HARDWARE_SPECS } from '../data/benchmarkData';
 
 export default function Navbar({ activeTab, setActiveTab, onExportJSON, onExportCSV, onPrintReport }) {
   const tabs = [
+    { id: 'operations', label: '⚡ Live Model Lab' },
     { id: 'matrix', label: 'Benchmark Matrix' },
     { id: 'recommender', label: 'Pareto Recommender' },
     { id: 'kvcache', label: 'KV Cache Simulator' },
