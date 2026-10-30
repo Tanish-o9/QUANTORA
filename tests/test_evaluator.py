@@ -59,3 +59,47 @@ def test_relative_delta_comparison():
     assert "delta_rougeL" in delta_res
     assert "output_agreement_f1" in delta_res
 
+
+def test_compute_perplexity_from_nll():
+    """Verify exponentiated perplexity mathematical formula."""
+    evaluator = get_evaluator()
+    import math
+
+    losses = [1.0, 2.0, 3.0]
+    expected = round(math.exp(2.0), 3)
+    ppl = evaluator.compute_perplexity_from_nll(losses)
+    assert ppl == expected
+
+
+def test_compute_perplexity_with_mock():
+    """Verify perplexity computation logic with a mock model and tokenizer."""
+    import torch
+    evaluator = get_evaluator()
+
+    class MockTokenizer:
+        def __call__(self, text, return_tensors="pt"):
+            class Enc:
+                input_ids = torch.tensor([[101, 102, 103, 104, 105, 106, 107, 108]])
+            return Enc()
+
+    class MockOutputs:
+        loss = torch.tensor(1.5)
+
+    class MockModel:
+        def __call__(self, input_ids, labels=None):
+            return MockOutputs()
+
+    res = evaluator.compute_perplexity(
+        model=MockModel(),
+        tokenizer=MockTokenizer(),
+        text="Sample evaluation text",
+        device="cpu",
+        max_length=4,
+        stride=2,
+    )
+
+    assert "perplexity" in res
+    assert "mean_loss" in res
+    assert res["perplexity"] > 0
+    assert res["num_chunks"] > 0
+

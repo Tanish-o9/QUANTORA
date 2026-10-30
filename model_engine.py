@@ -282,6 +282,27 @@ class ModelEngine:
             "throughput_tokens_per_sec": round(throughput, 2),
         }
 
+    def calculate_perplexity(
+        self,
+        text: Optional[str] = None,
+        max_length: int = 512,
+        stride: int = 256,
+    ) -> Dict[str, Any]:
+        """Calculate Perplexity (PPL) on evaluation text using current loaded model."""
+        if self.model is None or self.tokenizer is None:
+            raise RuntimeError("No model is loaded. Call load_model() first.")
+
+        from evaluator import get_evaluator
+        evaluator = get_evaluator()
+        return evaluator.compute_perplexity(
+            model=self.model,
+            tokenizer=self.tokenizer,
+            text=text,
+            device=self.device,
+            max_length=max_length,
+            stride=stride,
+        )
+
 
 # Global singleton instance for Streamlit session sharing
 _ENGINE_INSTANCE: Optional[ModelEngine] = None

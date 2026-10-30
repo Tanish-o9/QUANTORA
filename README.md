@@ -2,9 +2,13 @@
 ### LLM Performance & Optimization Engineering Platform
 
 [![CI/CD Pipeline](https://github.com/Tanish-o9/QUANTORA/actions/workflows/ci.yml/badge.svg)](https://github.com/Tanish-o9/QUANTORA/actions/workflows/ci.yml)
+[![Vercel Deployment](https://img.shields.io/badge/Deploy%20with-Vercel-black?logo=vercel)](https://vercel.com/new/clone?repository-url=https://github.com/Tanish-o9/QUANTORA/tree/main/web)
+[![Docker Support](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://github.com/Tanish-o9/QUANTORA/blob/main/docker-compose.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch 2.6+](https://img.shields.io/badge/PyTorch-2.6+-ee4c2c.svg)](https://pytorch.org/)
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Tanish-o9/QUANTORA/tree/main/web)
 
 **Benchmark. Analyze. Optimize.**
 
@@ -25,30 +29,37 @@ QUANTORA/
 │   └── workflows/
 │       └── ci.yml              # Automated GitHub Actions CI/CD pipeline
 ├── web/                        # Modern React + Vite + Tailwind CSS Dashboard (Vercel Ready)
-│   ├── src/components/         # BenchmarkMatrix, ParetoRecommender, KVCache, SpeculativeDecoding
+│   ├── src/components/         # LiveOperationsLab, BenchmarkMatrix, ParetoRecommender, KVCache
+│   ├── Dockerfile              # Production multi-stage Nginx container
+│   ├── nginx.conf              # Reverse proxy configuration
 │   └── vercel.json             # 1-Click zero-config Vercel deployment spec
 ├── tests/
 │   ├── test_optimizer.py       # Hardware detection, quantization & KV cache tests
-│   ├── test_evaluator.py       # ROUGE & semantic similarity evaluation tests
+│   ├── test_evaluator.py       # ROUGE, token F1 & Perplexity (PPL) tests
 │   ├── test_storage.py         # SQLite persistence & Pareto recommender tests
 │   └── test_cli.py             # Headless CLI command smoke tests
 ├── app.py                      # Professional Streamlit dashboard & analytics UI
-├── cli.py                      # Terminal CLI for automated headless benchmarks & history
-├── model_engine.py             # Hugging Face model lifecycle, device placement & streaming inference
-├── benchmark_engine.py         # Controlled benchmark trials, CUDA-sync timing & NVML energy telemetry
+├── server.py                   # Zero-dependency HTTP REST API backend (port 8000)
+├── cli.py                      # Terminal CLI for automated benchmarks, history & perplexity
+├── model_engine.py             # Model lifecycle, device placement, streaming & PPL
+├── benchmark_engine.py         # Controlled benchmark trials, CUDA-sync timing & NVML telemetry
 ├── optimizer.py                # Hardware validation, quantization, KV cache & LoRA
-├── evaluator.py                # ROUGE, token F1 & reasoning evaluation
+├── evaluator.py                # ROUGE, token F1, reasoning & Perplexity (PPL) engine
 ├── storage.py                  # SQLite persistence, Pareto recommender & CSV/JSON export
+├── docker-compose.yml          # Dual-service orchestrator (API + React Web)
+├── Dockerfile                  # Python inference & benchmarking container
+├── vercel.json                 # Vercel SPA routing configuration
 ├── requirements.txt            # Minimal, explicit project dependencies
 ├── LICENSE                     # MIT Open-Source License
 ├── README.md                   # Architecture documentation, setup & methodology
 │
 ├── data/
 │   ├── sample_prompts.json     # Fixed prompts across Summarization, Reasoning, Code & QA
-│   └── reasoning_eval.json     # Standardized ML Systems & LLM reasoning benchmark questions
+│   └── reasoning_eval.json     # Standardized ML Systems & LLM reasoning questions
 │
 └── results/
     ├── experiments.db          # SQLite database storing benchmark runs
+    ├── benchmark_report.html   # Standalone executive HTML report
     ├── benchmark_results.csv
     └── benchmark_results.json
 ```
@@ -148,35 +159,44 @@ python cli.py export
 
 # 6. Generate standalone executive HTML benchmark report
 python cli.py report --output results/benchmark_report.html
+
+# 7. Compute sliding-window Perplexity (PPL) for model fluency & quantization degradation
+python cli.py perplexity --model Qwen/Qwen2.5-0.5B-Instruct --precision fp16
 ```
 
-### Docker Container Deployment
-Run the full Quantora engineering lab inside a self-contained container with zero local dependency conflicts:
+### Docker & Microservices Deployment
+Run the complete Quantora engineering platform (Python Inference API + React Frontend) inside isolated containers:
 
 ```bash
-# Build and run via Docker Compose
-docker-compose up --build
+# Build and launch both Backend API & React Web UI
+docker compose up --build
 
-# Or run directly via Docker CLI
-docker build -t quantora:latest .
-docker run -p 8501:8501 -v $(pwd)/results:/app/results quantora:latest
+# Backend REST API will be live on: http://localhost:8000
+# React Web Dashboard will be live on: http://localhost:3000
 ```
-Access the Streamlit lab at `http://localhost:8501`.
 
-### 🌐 Modern Web Dashboard (React + Vite + Tailwind) & Vercel Deployment
-A client-side interactive engineering dashboard is located in `web/` for zero-lag analytics and instantaneous Vercel deployment:
+For NVIDIA GPU acceleration in Docker, ensure [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) is installed and uncomment the `deploy.resources.reservations.devices` block in `docker-compose.yml`.
+
+### 🌐 Modern Web Dashboard (React 19 + Vite + Tailwind v4) & Vercel Deployment
+A production-ready client-side interactive engineering dashboard is located in `web/` with live model interaction and zero-latency analytics:
 
 ```bash
+# Local development
 cd web
 npm install
 npm run dev
+# Dashboard live at http://localhost:5173
 ```
 
 #### 🚀 Deploy to Vercel in 1-Click
-Both `vercel.json` and `web/vercel.json` are pre-configured:
-1. Connect your GitHub repository to [Vercel](https://vercel.com/new).
-2. Root directory can be left as default (or set to `web`).
-3. Click **Deploy** to get a global, blazing-fast edge-hosted dashboard.
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Tanish-o9/QUANTORA/tree/main/web)
+
+Both root `vercel.json` and `web/vercel.json` are pre-configured with SPA route rewrites:
+1. **GitHub Import:** Import `https://github.com/Tanish-o9/QUANTORA` into [Vercel](https://vercel.com/new).
+2. **Framework Preset:** Vite (Auto-detected).
+3. **Dual Operation Mode:**
+   - **Local Inference Mode:** Connects to `http://localhost:8000` when running the local Python API server.
+   - **Edge Sandbox Simulator Mode:** When hosted purely on Vercel without a connected GPU, the **Live Operations Lab** automatically switches to edge simulation using exact transformer scaling laws.
 
 ---
 

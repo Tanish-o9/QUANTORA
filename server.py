@@ -176,6 +176,29 @@ class QuantoraAPIHandler(BaseHTTPRequestHandler):
                 })
                 return
 
+            if url == "/api/perplexity":
+                model_id = body.get("model_id", "Qwen/Qwen2.5-0.5B-Instruct")
+                precision = body.get("precision", "fp16")
+                text = body.get("text")
+                device = body.get("device", "cuda")
+                max_length = int(body.get("max_length", 512))
+                stride = int(body.get("stride", 256))
+
+                engine = get_model_engine()
+                engine.load_model(model_id=model_id, precision=precision, device=device)
+
+                t0 = time.perf_counter()
+                ppl_res = engine.calculate_perplexity(text=text, max_length=max_length, stride=stride)
+                duration = time.perf_counter() - t0
+
+                self._send_json(HTTPStatus.OK, {
+                    **ppl_res,
+                    "model_id": model_id,
+                    "precision": precision,
+                    "duration_s": round(duration, 3),
+                })
+                return
+
             if url == "/api/recommend":
                 from storage import recommend_best_configuration
 

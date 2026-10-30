@@ -1,5 +1,5 @@
 # Quantora — LLM Performance & Optimization Engineering Platform
-# Multi-environment Container for Interactive Dashboard & Headless Benchmarking
+# Backend Inference & Benchmarking Container
 
 FROM python:3.11-slim
 
@@ -7,9 +7,8 @@ FROM python:3.11-slim
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
-    STREAMLIT_SERVER_PORT=8501 \
-    STREAMLIT_SERVER_ADDRESS=0.0.0.0 \
-    STREAMLIT_SERVER_HEADLESS=true
+    QUANTORA_HOST=0.0.0.0 \
+    QUANTORA_PORT=8000
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -32,13 +31,12 @@ RUN pip install --upgrade pip && \
 # Copy application source code
 COPY . .
 
-# Expose Streamlit dashboard port
-EXPOSE 8501
+# Expose API server port (8000) and Streamlit fallback (8501)
+EXPOSE 8000 8501
 
-# Healthcheck to verify Streamlit server readiness
-HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-    CMD curl --fail http://localhost:8501/_stcore/health || exit 1
+# Healthcheck to verify Quantora API readiness
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD curl --fail http://localhost:8000/api/health || exit 1
 
-# Default command to run interactive dashboard
-CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
-
+# Default command: launch Quantora REST API server
+CMD ["python", "server.py"]

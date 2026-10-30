@@ -1,21 +1,21 @@
 services:
-  quantora:
+  quantora-api:
     build:
       context: .
       dockerfile: Dockerfile
-    image: quantora:latest
-    container_name: quantora-lab
+    image: quantora-api:latest
+    container_name: quantora-api
     ports:
-      - "8501:8501"
+      - "8000:8000"
     environment:
-      - STREAMLIT_SERVER_PORT=8501
-      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
-      - STREAMLIT_SERVER_HEADLESS=true
+      - QUANTORA_HOST=0.0.0.0
+      - QUANTORA_PORT=8000
+      - PYTHONUNBUFFERED=1
     volumes:
       - ./results:/app/results
       - ./data:/app/data
     restart: unless-stopped
-    # Uncomment the following block if running on a host with NVIDIA Container Toolkit for GPU passthrough:
+    # Uncomment the following block for NVIDIA GPU hardware acceleration:
     # deploy:
     #   resources:
     #     reservations:
@@ -24,3 +24,14 @@ services:
     #           count: all
     #           capabilities: [gpu]
 
+  quantora-web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    image: quantora-web:latest
+    container_name: quantora-web
+    ports:
+      - "3000:80"
+    depends_on:
+      - quantora-api
+    restart: unless-stopped

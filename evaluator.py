@@ -1,6 +1,7 @@
 """evaluator.py - Quality evaluation using ROUGE, semantic similarity, and relative delta."""
 
 from typing import Any, Dict, List, Optional
+import math
 import numpy as np
 
 try:
@@ -14,6 +15,16 @@ try:
     HAS_EVALUATE = True
 except ImportError:
     HAS_EVALUATE = False
+
+
+STANDARD_PPL_EVAL_TEXT = (
+    "Artificial intelligence and deep learning have catalyzed fundamental transformations across scientific and "
+    "industrial paradigms. Transformer architectures rely on multi-head self-attention mechanisms that scale quadratically "
+    "with sequence length. Model compression techniques, specifically integer quantization (such as INT8 and INT4), aim to "
+    "reduce memory footprint and computational requirements without significant degradation in perplexity or task accuracy. "
+    "Activation-aware weight quantization (AWQ) and normal float quantization (NF4) preserve critical outlier weights, "
+    "retaining the expressive capacity of dense transformer layers while halving or quartering hardware memory bandwidth demands."
+)
 
 
 class ResponseEvaluator:
@@ -130,6 +141,75 @@ class ResponseEvaluator:
             "correct": correct_count,
             "accuracy_pct": round(acc, 2),
             "details": details,
+        }
+
+    @staticmethod
+    def compute_perplexity_from_nll(nll_losses: List[float]) -> float:
+        """Compute exponentiated perplexity from negative log-likelihood losses."""
+        if not nll_losses:
+            return float("nan")
+        mean_loss = sum(nll_losses) / len(nll_losses)
+        return round(float(math.exp(mean_loss)), 3)
+
+    def compute_perplexity(
+        self,
+        model: Any,
+        tokenizer: Any,
+        text: Optional[str] = None,
+        device: str = "cpu",
+        max_length: int = 512,
+        stride: int = 256,
+    ) -> Dict[str, Any]:
+        """Compute sliding-window perplexity (PPL) for language models using CrossEntropyLoss.
+
+        Perplexity is the gold-standard metric for evaluating quantization loss and model fluency:
+        PPL = exp( mean( -log P(w_t | w_<t) ) )
+        Lower perplexity indicates superior predictive fluency and minimal quantization degradation.
+        """
+        import torch
+
+        eval_text = text if (text and text.strip()) else STANDARD_PPL_EVAL_TEXT
+        encodings = tokenizer(eval_text, return_tensors="pt")
+        seq_len = encodings.input_ids.size(1)
+
+        if seq_len < 2:
+            return {"perplexity": 1.0, "mean_loss": 0.0, "num_chunks": 1, "total_tokens": seq_len}
+
+        nlls = []
+        prev_end_loc = 0
+
+        # Adjust max_length if text is shorter
+        eff_max_len = min(max_length, seq_len)
+        eff_stride = min(stride, eff_max_len)
+
+        for begin_loc in range(0, seq_len, eff_stride):
+            end_loc = min(begin_loc + eff_max_len, seq_len)
+            trg_len = end_loc - prev_end_loc
+            input_ids = encodings.input_ids[:, begin_loc:end_loc].to(device)
+            target_ids = input_ids.clone()
+            target_ids[:, :-trg_len] = -100
+
+            with torch.no_grad():
+                outputs = model(input_ids, labels=target_ids)
+                loss = outputs.loss
+                if loss is not None and not torch.isnan(loss):
+                    nlls.append(loss.item())
+
+            prev_end_loc = end_loc
+            if end_loc == seq_len:
+                break
+
+        if not nlls:
+            return {"perplexity": float("nan"), "mean_loss": 0.0, "num_chunks": 0, "total_tokens": seq_len}
+
+        mean_nll = sum(nlls) / len(nlls)
+        ppl = math.exp(mean_nll)
+
+        return {
+            "perplexity": round(float(ppl), 3),
+            "mean_loss": round(float(mean_nll), 4),
+            "num_chunks": len(nlls),
+            "total_tokens": seq_len,
         }
 
     def compare_outputs(

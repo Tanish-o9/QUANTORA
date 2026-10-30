@@ -106,6 +106,24 @@ def cmd_recommend(args):
         print("No configuration in history satisfies the provided constraints.")
 
 
+def cmd_perplexity(args):
+    from model_engine import get_model_engine
+    engine = get_model_engine()
+    device = "cpu" if args.cpu else "cuda"
+    print("=" * 60)
+    print(f"COMPUTING PERPLEXITY (PPL): {args.model} [{args.precision.upper()}]")
+    print("=" * 60)
+    engine.load_model(model_id=args.model, precision=args.precision, device=device)
+    t0 = time.perf_counter()
+    res = engine.calculate_perplexity(text=args.text, max_length=args.max_length, stride=args.stride)
+    elapsed = time.perf_counter() - t0
+    print(f"  Perplexity (PPL) : {res['perplexity']}")
+    print(f"  Cross-Entropy Loss: {res['mean_loss']}")
+    print(f"  Total Tokens     : {res['total_tokens']}")
+    print(f"  Chunks Evaluated : {res['num_chunks']}")
+    print(f"  Evaluation Time  : {round(elapsed, 2)} s")
+
+
 def main():
     parser = argparse.ArgumentParser(description="LLM Efficiency Lab CLI")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -145,6 +163,16 @@ def main():
     p_rec.add_argument("--budget", type=float, default=2000.0, help="Max VRAM budget in MB")
     p_rec.add_argument("--latency", type=float, default=3.0, help="Max acceptable latency in seconds")
     p_rec.set_defaults(func=cmd_recommend)
+
+    # Perplexity
+    p_ppl = subparsers.add_parser("perplexity", help="Compute sliding-window perplexity (PPL) for model quality")
+    p_ppl.add_argument("--model", default="Qwen/Qwen2.5-0.5B-Instruct", help="Hugging Face model ID")
+    p_ppl.add_argument("--precision", default="fp16", choices=["fp32", "fp16", "bf16", "int8", "int4"])
+    p_ppl.add_argument("--text", default=None, help="Custom text passage for evaluation (defaults to standard benchmark passage)")
+    p_ppl.add_argument("--max-length", type=int, default=512, help="Max context window chunk length")
+    p_ppl.add_argument("--stride", type=int, default=256, help="Sliding window stride length")
+    p_ppl.add_argument("--cpu", action="store_true", help="Force CPU inference")
+    p_ppl.set_defaults(func=cmd_perplexity)
 
     args = parser.parse_args()
     if hasattr(args, "func"):
