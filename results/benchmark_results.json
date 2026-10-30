@@ -1,0 +1,32 @@
+[
+  {
+    "experiment_id":"exp_20261030_160034_e80448",
+    "timestamp":"2026-10-30T16:00:34.131589",
+    "model_id":"Qwen\/Qwen2.5-0.5B-Instruct",
+    "precision":"fp16",
+    "device":"cuda:0",
+    "prompt_id":"test_prompt_01",
+    "prompt_text":"Summarize the core benefits of quantization for edge AI deployment.",
+    "max_new_tokens":32,
+    "num_trials":2,
+    "warmup_runs":1,
+    "avg_latency_s":2.0106,
+    "median_latency_s":2.0106,
+    "p95_latency_s":2.0176,
+    "ttft_s":0.0034,
+    "tpot_s":0.0445,
+    "throughput_tokens_sec":15.91,
+    "total_throughput_tokens_sec":22.88,
+    "peak_gpu_allocated_mb":953.16,
+    "peak_gpu_reserved_mb":960.0,
+    "peak_cpu_ram_mb":1479.02,
+    "load_time_s":8.389,
+    "total_params":494032768,
+    "generated_text":" Quantization is a technique used to reduce the size and power consumption of deep neural networks (DNNs) by quantizing their weights and activations. The main",
+    "rouge1":19.51,
+    "rouge2":0.0,
+    "rougeL":19.51,
+    "hardware_summary":"{\"os\": \"Windows-11-10.0.26300-SP0\", \"python_version\": \"3.13.3\", \"torch_version\": \"2.6.0+cu124\", \"cuda_available\": true, \"cuda_version\": \"12.4\", \"device_name\": \"NVIDIA GeForce RTX 2050\", \"total_vram_gb\": 4.0, \"compute_capability\": \"8.6\", \"bf16_supported\": true, \"bitsandbytes_available\": true, \"peft_available\": true, \"total_ram_gb\": 11.71, \"available_ram_gb\": 0.91}",
+    "raw_trials_json":"[{\"trial_index\": 1, \"latency_seconds\": 2.0184, \"ttft_seconds\": 0.0037, \"tpot_seconds\": 0.0447, \"prompt_tokens\": 14, \"generated_tokens\": 32, \"total_tokens\": 46, \"throughput_tokens_per_sec\": 15.85, \"total_throughput_tokens_per_sec\": 22.79, \"peak_gpu_allocated_mb\": 953.16, \"peak_gpu_reserved_mb\": 960.0, \"peak_cpu_ram_mb\": 1479.02}, {\"trial_index\": 2, \"latency_seconds\": 2.0027, \"ttft_seconds\": 0.003, \"tpot_seconds\": 0.0444, \"prompt_tokens\": 14, \"generated_tokens\": 32, \"total_tokens\": 46, \"throughput_tokens_per_sec\": 15.98, \"total_throughput_tokens_per_sec\": 22.97, \"peak_gpu_allocated_mb\": 953.16, \"peak_gpu_reserved_mb\": 960.0, \"peak_cpu_ram_mb\": 1479.02}]"
+  }
+]
