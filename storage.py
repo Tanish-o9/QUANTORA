@@ -275,14 +275,34 @@ def generate_html_report(
 
     total_runs = len(df)
     unique_models = df["model_id"].nunique() if not df.empty and "model_id" in df else 0
-    fastest_tok_s = df["throughput_tokens_sec"].max() if not df.empty and "throughput_tokens_sec" in df else 0.0
-    lowest_mem_mb = df["peak_gpu_allocated_mb"].min() if not df.empty and "peak_gpu_allocated_mb" in df else 0.0
+
+    fastest_tok_s = 0.0
+    if not df.empty and "throughput_tokens_sec" in df:
+        val_tp = df["throughput_tokens_sec"].dropna()
+        if not val_tp.empty:
+            fastest_tok_s = float(val_tp.max())
+
+    lowest_mem_mb = 0.0
+    if not df.empty:
+        val_gpu = df["peak_gpu_allocated_mb"].dropna() if "peak_gpu_allocated_mb" in df else pd.Series(dtype=float)
+        if not val_gpu.empty:
+            lowest_mem_mb = float(val_gpu.min())
+        else:
+            val_cpu = df["peak_cpu_ram_mb"].dropna() if "peak_cpu_ram_mb" in df else pd.Series(dtype=float)
+            if not val_cpu.empty:
+                lowest_mem_mb = float(val_cpu.min())
 
     # Best overall recommendation
     rec = recommend_best_configuration(db_path=db_path)
     rec_text = "N/A"
     if rec:
-        rec_text = f"<strong>{rec.get('model_id')}</strong> ({str(rec.get('precision')).upper()}) - {rec.get('throughput_tokens_sec', 0.0):.1f} tok/s | {rec.get('avg_latency_s', 0.0):.2f}s latency"
+        m_id = rec.get("model_id") or "Unknown"
+        p_val = str(rec.get("precision") or "FP32").upper()
+        tp_val = rec.get("throughput_tokens_sec")
+        tp_str = f"{float(tp_val):.1f} tok/s" if tp_val is not None and pd.notna(tp_val) else "N/A"
+        lat_val = rec.get("avg_latency_s")
+        lat_str = f"{float(lat_val):.2f}s latency" if lat_val is not None and pd.notna(lat_val) else "N/A"
+        rec_text = f"<strong>{m_id}</strong> ({p_val}) - {tp_str} | {lat_str}"
 
     rows_html = ""
     if not df.empty:
