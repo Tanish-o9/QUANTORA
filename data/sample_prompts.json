@@ -1,0 +1,38 @@
+[
+  {
+    "id": "sum-01",
+    "category": "Summarization",
+    "prompt": "Summarize the following passage in two concise sentences:\n\nArtificial intelligence has revolutionized numerous industries over the past decade, from healthcare diagnostics to financial fraud detection. Machine learning models, particularly deep neural networks and large language models, analyze massive datasets to discover intricate patterns that humans might miss. However, the high computational demands and massive memory requirements of these systems pose significant challenges for real-world deployment on edge devices and energy-constrained servers. Engineers are actively developing quantization, pruning, and low-rank adaptation techniques to make these models faster, lighter, and more environmentally sustainable.",
+    "reference": "Artificial intelligence and deep neural networks have transformed industries by uncovering complex patterns in vast datasets. However, their high compute and memory requirements necessitate optimization techniques like quantization and pruning for efficient deployment.",
+    "expected_max_tokens": 80
+  },
+  {
+    "id": "sum-02",
+    "category": "Summarization",
+    "prompt": "Summarize the primary benefits of model quantization for deep learning deployment in three bullet points:\n\nModel quantization converts high-precision floating-point numbers (such as FP32 or FP16) into lower-precision representations like INT8 or INT4. This reduction directly shrinks the model's memory footprint by up to 75%, allowing larger models to fit into limited GPU VRAM or system RAM. Additionally, lower-precision integer arithmetic requires less memory bandwidth and fewer clock cycles on specialized tensor cores, leading to higher inference throughput and lower latency. Finally, because memory access is often the primary driver of energy consumption in modern hardware accelerators, quantized inference significantly reduces electrical power consumption and cooling requirements in data centers.",
+    "reference": "- Reduces model memory footprint by up to 75%, enabling deployment on constrained hardware.\n- Improves inference throughput and reduces latency via faster integer arithmetic.\n- Decreases energy consumption and cooling costs by minimizing memory bandwidth demands.",
+    "expected_max_tokens": 100
+  },
+  {
+    "id": "reasoning-01",
+    "category": "Reasoning & QA",
+    "prompt": "Question: A server cluster has 8 GPUs, each with 24GB of VRAM. A 70-billion parameter model in 16-bit precision requires approximately 140GB of VRAM for weights alone. Can this model fit across the cluster without quantization? Explain the arithmetic step by step.",
+    "reference": "Yes. 8 GPUs with 24GB each provide a total of 192GB VRAM (8 * 24 = 192). Since 140GB is less than 192GB, the model weights will fit across the cluster with approximately 52GB remaining for KV cache and activations.",
+    "expected_max_tokens": 128
+  },
+  {
+    "id": "code-01",
+    "category": "Code Generation",
+    "prompt": "Write a clean, efficient Python function `compute_token_throughput(num_tokens: int, duration_sec: float) -> float` that returns tokens per second, with proper validation to prevent division by zero.",
+    "reference": "def compute_token_throughput(num_tokens: int, duration_sec: float) -> float:\n    if duration_sec <= 0:\n        return 0.0\n    return num_tokens / duration_sec",
+    "expected_max_tokens": 128
+  },
+  {
+    "id": "instruct-01",
+    "category": "General Instruction",
+    "prompt": "Explain the difference between Time to First Token (TTFT) and Time Per Output Token (TPOT) in LLM inference systems, and describe why each metric matters to users.",
+    "reference": "Time to First Token (TTFT) measures the prefill latency from when a user submits a prompt to when the first token appears, determining perceived responsiveness. Time Per Output Token (TPOT) measures the decode latency between each subsequent token, determining the reading speed and streaming smoothness.",
+    "expected_max_tokens": 120
+  }
+]
+
