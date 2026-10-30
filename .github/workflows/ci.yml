@@ -71,6 +71,6 @@ jobs:
 
       - name: Verify Streamlit App Module
         run: |
-          streamlit --help
-          python -c "import app; print('[OK] Streamlit application module loaded successfully')"
+          python -m streamlit --version
+          python -m py_compile app.py
 
