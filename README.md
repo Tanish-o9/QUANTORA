@@ -100,7 +100,9 @@ To ensure high reproducibility across runs, the benchmarking engine enforces:
 - **INT4 (4-bit NF4 Quantization):** Enabled via `BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.float16)`. Reduces memory footprint by up to 70–75%.
 
 ### KV Cache Analysis
-- **Theoretical Calculator:** $2 \times \text{layers} \times \text{heads} \times \text{head\_dim} \times \text{seq\_len} \times \text{batch\_size} \times \text{bytes\_per\_element}$
+- **Theoretical Calculator:**
+  $$\text{KV Cache Size} = 2 \times n_{\text{layers}} \times n_{\text{heads}} \times d_{\text{head}} \times L_{\text{seq}} \times B \times P_{\text{bytes}}$$
+  *(Formula: `2 * num_layers * num_heads * head_dim * seq_len * batch_size * bytes_per_element`)*
 - **Empirical Evaluation:** Compares autoregressive decoding with `use_cache=True` vs `use_cache=False`.
 - *Note:* The standard KV cache trades memory for compute efficiency (preventing $\mathcal{O}(N^2)$ recomputation); it does *not* reduce memory footprint.
 
