@@ -26,7 +26,7 @@ jobs:
 
       - name: Syntax Compilation Check
         run: |
-          python -m py_compile app.py model_engine.py benchmark_engine.py optimizer.py evaluator.py storage.py cli.py
+          python -m py_compile app.py server.py model_engine.py benchmark_engine.py optimizer.py evaluator.py storage.py cli.py
           python -m py_compile tests/*.py
 
   test-suite:
